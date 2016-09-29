@@ -9,18 +9,21 @@
     }
     .upload-form {
       position: relative;
-      display: inline-block;
+      width: 150px;
       padding: 20px;
       left: 50%;
+      transform: translateX(-50%);
       border: 2px solid black;
-      top: 50%;
-      transform: translate(-50%, 50%);
+      top: 50px;
     }
     .file-submit {
       position: relative;
       left: 50%;
       transform: translateX(-50%);
       margin-top: 10px;
+    }
+    .messages {
+      color: red;
     }
   </style>
   </head>
@@ -34,5 +37,12 @@
         <input type="submit" class="file-submit"/>
       </form>
     </div>
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <p>{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
   </body>
 </html>

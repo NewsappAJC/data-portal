@@ -3,7 +3,9 @@ import subprocess
 
 # Django imports
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib import messages
+from django.template import RequestContext
 
 # Third-party imports
 import boto3, botocore
@@ -11,6 +13,8 @@ import csvkit
 
 def upload_file(request):
     if request.method == 'POST':
+        messages.add_message(request, messages.ERROR, 'A file with that name already exists')
+        return HttpResponseRedirect('/')
         fcontent = request.FILES['file-input'].read()
         fkey = request.FILES['file-input'].name
 
@@ -22,7 +26,6 @@ def upload_file(request):
         # S3 bucket, and if so throw an error
         try:
             bucket.download_file(fkey, '/tmp/boto_test')
-            return HttpResponse('A file with that name already exists. Please try again.')
         except botocore.exceptions.ClientError:
             pass
 
