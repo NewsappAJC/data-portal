@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .upload-form {
+      position: relative;
+      display: inline-block;
+      padding: 20px;
+      left: 50%;
+      border: 2px solid black;
+      top: 50%;
+      transform: translate(-50%, 50%);
+    }
+    .file-submit {
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 10px;
+    }
+  </style>
+  </head>
+  <body>
+    <div class="upload-form">
+      <form enctype="multipart/form-data" action="upload-file/" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <input type="file" name="file-input" id="file-input" accept=".csv"/>
+        </div>
+        <input type="submit" class="file-submit"/>
+      </form>
+    </div>
+  </body>
+</html>
