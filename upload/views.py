@@ -1,17 +1,24 @@
 # Python standard library imports
 import subprocess
+import mysql.connector
 
 # Django imports
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.template import RequestContext
+from django.db import connection
 
 # Third-party imports
 import boto3, botocore
 import csvkit
 
-BUCKET_NAME = 'ajc-data-warehouse'
+# Get database details from environmental variables
+BUCKET_NAME = os.environ.get('S3_BUCKET')
+DB_HOST = os.environ.get('DB_HOST')
+DB_NAME = os.environ.get('DB_NAME')
+DB_USER = os.environ.get('DB_USER')
+DB_PW = os.environ.get('DB_PW')
 
 def upload_file(request):
     if request.method == 'POST':
@@ -37,8 +44,17 @@ def upload_file(request):
         path = '/tmp/' + fkey
         with open(path, 'w') as f:
             f.write(fcontent)
-        
-        query = subprocess.check_output(['csvsql', path])
+
+        # Run a LOAD DATA INFILE query to create a table in the data warehouse
+        with connection.cursor() as cursor: 
+            create_table_query = subprocess.check_output(['csvsql', path])
+            query = r"""
+                {create_table}
+                LOAD DATA INFILE {path} INTO TABLE {name}
+                FIELDS TERMINATED BY "," LINES TERMINATED BY "\r\n"
+                IGNORE 1 LINES;
+                """.format(create_table=create_table_query, path=path, name=fkey[:-4])
+            cursor.execute(query) # Create the table and load in the data
 
         # Return a preview of the top few rows in the table
         # and check if the casting is correct
