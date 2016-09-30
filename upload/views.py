@@ -1,6 +1,5 @@
 # Python standard library imports
 import subprocess
-import mysql.connector
 
 # Django imports
 from django.shortcuts import render
@@ -10,15 +9,12 @@ from django.template import RequestContext
 from django.db import connection
 
 # Third-party imports
+import mysqlclient
 import boto3, botocore
 import csvkit
 
 # Get database details from environmental variables
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-DB_HOST = os.environ.get('DB_HOST')
-DB_NAME = os.environ.get('DB_NAME')
-DB_USER = os.environ.get('DB_USER')
-DB_PW = os.environ.get('DB_PW')
 
 def upload_file(request):
     if request.method == 'POST':
