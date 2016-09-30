@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 DATABASES = {}
 DATABASES['default'] = dj_database_url.config()
 DATABASES['default']['OPTIONS'] = {
-    'local_infile': True
+    'local_infile': 1
 }
 print DATABASES['default']
 
