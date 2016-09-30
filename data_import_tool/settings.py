@@ -81,6 +81,10 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 
 DATABASES = {}
 DATABASES['default'] = dj_database_url.config()
+DATABASES['default']['OPTIONS'] = {
+    'local_infile': True
+}
+print DATABASES['default']
 
 
 # Password validation
