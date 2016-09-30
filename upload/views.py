@@ -1,4 +1,5 @@
 # Python standard library imports
+import os
 import subprocess
 
 # Django imports
@@ -9,7 +10,6 @@ from django.template import RequestContext
 from django.db import connection
 
 # Third-party imports
-import mysqlclient
 import boto3, botocore
 import csvkit
 
