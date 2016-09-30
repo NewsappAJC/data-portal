@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 DATABASES = {}
-DATABASES['default'] = dj_database_url.config(os.environ.get('DB_CONN'))
+DATABASES['default'] = dj_database_url.config()
 
 
 # Password validation

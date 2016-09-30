@@ -21,6 +21,7 @@ def upload_file(request):
         fcontent = request.FILES['file-input'].read()
         fkey = request.FILES['file-input'].name
 
+        """
         # Access bucket using credentials in ~/.aws/credentials
         s3 = boto3.resource('s3')
         bucket = s3.Bucket(BUCKET_NAME)
@@ -34,6 +35,7 @@ def upload_file(request):
             return HttpResponseRedirect('/')
         except botocore.exceptions.ClientError:
             pass
+        """
 
         # Write the file to the /tmp/ directory, then use
         # csvkit to generate the CREATE TABLE query
@@ -51,6 +53,7 @@ def upload_file(request):
                 IGNORE 1 LINES;
                 """.format(create_table=create_table_query, path=path, name=fkey[:-4])
             cursor.execute(query) # Create the table and load in the data
+
 
         # Return a preview of the top few rows in the table
         # and check if the casting is correct
