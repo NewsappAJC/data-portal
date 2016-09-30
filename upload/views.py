@@ -14,13 +14,34 @@ from django.db import connection, OperationalError
 import boto3, botocore
 import csvkit
 
+# Constants
 # Get database details from environmental variables
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 
+#------------------------------------#
+# Take file uploaded by user in TKTK view
+# use csvkit to generate DB schema, and write
+# to SQL table. Copy files and related 
+# information directly to S3 bucket.
+#------------------------------------#
 def upload_file(request):
     if request.method == 'POST':
         fcontent = request.FILES['file-input'].read()
         fkey = request.FILES['file-input'].name
+
+        # Access bucket using credentials in ~/.aws/credentials
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(BUCKET_NAME)
+
+        # Check if a file with the same name already exists in the
+        # S3 bucket, and if so throw an error and return to the index
+        # page
+        try:
+            bucket.download_file(fkey, '/tmp/boto_test')
+            messages.add_message(request, messages.ERROR, 'A file with that name already exists')
+            return HttpResponseRedirect('/')
+        except botocore.exceptions.ClientError:
+            pass
 
         # Write the file to the /tmp/ directory, then use
         # csvkit to generate the CREATE TABLE query

@@ -9,10 +9,15 @@ The app is configured for deployment on Heroku, so it uses the ClearDB add-on to
 
 Installation
 ---
+* Install dependencies
+
 ```
 $ pip install -r requirements.txt
 ```
-If you haven't already, you will need to download the python MySQL connector from [the Oracle website](http://dev.mysql.com/downloads/connector/python/).
+
+* Set DATABASE_URL environmental variable to `mysql://USER:PASSWORD@HOST:PORT/NAME. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements.
+
+* Set S3_BUCKET environmental variable to your s3 bucket name
 
 Run dev server
 ---
