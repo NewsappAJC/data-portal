@@ -9,7 +9,7 @@
     }
     .upload-form {
       position: relative;
-      width: 150px;
+      width: 500px;
       padding: 20px;
       left: 50%;
       transform: translateX(-50%);
@@ -25,24 +25,36 @@
     .messages {
       color: red;
     }
+    .label {
+      text-align: right;
+    }
   </style>
   </head>
   <body>
     <div class="upload-form">
-      <form enctype="multipart/form-data" action="upload-file/" method="post">
+      <h2 style="text-align:center;">AJC Data Upload</h2>
+      <form enctype="multipart/form-data" action="/" method="post">
         {% csrf_token %}
-        <div class="form-group">
-          <input type="file" name="file-input" id="file-input" accept=".csv"/>
-        </div>
-        <input type="submit" class="file-submit"/>
+        <table>
+          {% for field in form %}
+          <tr>
+              <td class="label">{{ field.label }}</td>
+              <td>{{ field }}</td>
+              {% for error in field.errors %}
+              <td>{{ error }}</td>
+              {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+        <input type="submit" value="Upload" class="file-submit"/>
       </form>
     </div>
-      {% if messages %}
-      <div class="messages">
-        {% for message in messages %}
-          <p>{{ message }}</p>
-        {% endfor %}
-      </div>
-      {% endif %}
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <p>{{ message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
   </body>
 </html>
