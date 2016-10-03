@@ -7,12 +7,14 @@ import subprocess
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
-from django.db import connection, OperationalError
+from django.db import OperationalError
 from django.conf import settings
 
 # Third-party imports
 import boto3, botocore
 import csvkit
+import MySQLdb
+from sqlalchemy.engine.url import make_url
 
 # Local imports
 from .forms import DataForm
@@ -64,6 +66,11 @@ def upload_file(request):
             path = '/tmp/' + table_name + '.csv'
             with open(path, 'w') as f:
                 f.write(fcontent)
+
+            try:
+                db_url = make_url(os.environ['DATABASE_URL'])
+            except KeyError:
+                raise KeyError('Set the DATABASE_URL environmental variable')
 
             # Run a LOAD DATA INFILE query to create a table in the data warehouse
             with connection.cursor() as cursor: 
