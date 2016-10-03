@@ -1,7 +1,8 @@
-# Python standard library imports
+# Python standard lib imports
 import os
 import time
 import subprocess
+from datetime import date
 
 # Django imports
 from django.shortcuts import render
@@ -23,6 +24,7 @@ from .forms import DataForm
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = make_url(os.environ['DATABASE_URL'])
 
+
 #------------------------------------#
 # Take file uploaded by user, use
 # csvkit to generate a DB schema, and write
@@ -30,8 +32,8 @@ URL = make_url(os.environ['DATABASE_URL'])
 # information to S3 bucket.
 #------------------------------------#
 # TODO accept more than one file
-
 def upload_file(request):
+    # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -47,27 +49,32 @@ def upload_file(request):
             press_contact_number = form.cleaned_data['press_contact_number']
             press_contact_email =  form.cleaned_data['press_contact_email']
 
-            # Access bucket using credentials in ~/.aws/credentials
+            # Access S3 bucket using credentials in ~/.aws/credentials
             s3 = boto3.resource('s3')
             bucket = s3.Bucket(BUCKET_NAME)
 
             # Check if a file with the same name already exists in the
-            # S3 bucket, and if so throw an error and return to the index
-            # page
+            # S3 bucket, and if so throw an error
             try:
                 bucket.download_file(table_name, '/tmp/s3_test_file')
-                messages.add_message(request, messages.ERROR, 'A file with that name already exists')
+                messages.add_message(request, messages.ERROR, 'A file with that name already exists in s3')
                 return render(request, 'upload.html', {'form': form})
             except botocore.exceptions.ClientError:
                 pass
 
-            # Write the file to the /tmp/ directory, then use
-            # csvkit to generate the CREATE TABLE query
+            # Write the file to Amazon S3
+            bucket.put_object(Key='{db_name}/{today}/original/{filename}'.format(
+                db_name = db_name, 
+                today = date.today().isoformat()
+                filename = fkey), Body=fcontent)
+
+            # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
             path = '/tmp/' + table_name + '.csv'
             with open(path, 'w') as f:
                 f.write(fcontent)
             print path
 
+            # Try to get database parameters from the $DATABASE_URL environmental variable
             try:
                 db_host = URL.host
                 db_user = URL.username
@@ -75,7 +82,7 @@ def upload_file(request):
             except KeyError:
                 raise KeyError('The DATABASE_URL environmental variable is not set')
 
-            # Run a LOAD DATA INFILE query to create a table in the data warehouse
+            # Create a connection to the data warehouse
             connection  = MySQLdb.connect(host=db_host, 
                 user=db_user, 
                 passwd=db_pw, 
@@ -83,7 +90,7 @@ def upload_file(request):
                 local_infile=True)
             cursor = connection.cursor()
 
-            # Use csvkit to generate a CREATE TABLE statement based on the values
+            # Use csvkit to generate a CREATE TABLE statement based on the data types
             # in the csv
             create_table_q = subprocess.check_output(['csvsql', path])
             query = r"""
@@ -99,7 +106,7 @@ def upload_file(request):
                 cursor.close()
                 connection.commit() # Have to commit to make LOAD INFILE work
                 connection.close()
-            except OperationalError:
+            except OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
                 messages.add_message(request, messages.ERROR, 
                     'The database already contains a table named {}. Please try again.'.format(table_name))
                 return render(request, 'upload.html', {'form': form})
@@ -110,7 +117,5 @@ def upload_file(request):
             # After running the create table query, return a
             # log of the issues that need to be fixed if any
 
-            # Write the file to Amazon S3
-            # bucket.put_object(Key=fkey, Body=fcontent)
     return render(request, 'upload.html', {'form': form})
 
