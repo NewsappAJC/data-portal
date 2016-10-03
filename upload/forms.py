@@ -9,6 +9,7 @@ REPORTERS = (
 
 class DataForm(forms.Form):
     file = forms.FileField()
+    db_name = forms.CharField(label='Database name', max_length=100, initial='User_Jcox')
     table_name = forms.CharField(label='Table name', max_length=100, initial='asdf')
     topic = forms.CharField(label='Topic', max_length=100, initial='asdf')
     reporter_name = forms.ChoiceField(label='Reporter who aquired data', choices=REPORTERS, initial='Jonathan Cox')

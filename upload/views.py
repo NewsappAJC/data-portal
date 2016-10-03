@@ -13,15 +13,15 @@ from django.conf import settings
 # Third-party imports
 import boto3, botocore
 import csvkit
+from sqlalchemy.engine.url import make_url # Used to parse database information from env variable
 import MySQLdb
-from sqlalchemy.engine.url import make_url
 
 # Local imports
 from .forms import DataForm
 
 # Constants
-# Get database details from environmental variables
 BUCKET_NAME = os.environ.get('S3_BUCKET')
+URL = make_url(os.environ['DATABASE_URL'])
 
 #------------------------------------#
 # Take file uploaded by user, use
@@ -37,7 +37,7 @@ def upload_file(request):
         if form.is_valid():
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
-            db_name = settings.DATABASES['default']['NAME']
+            db_name = form.cleaned_data['db_name']
             table_name = form.cleaned_data['table_name']
             topic = form.cleaned_data['topic']
             reporter_name = form.cleaned_data['reporter_name']
@@ -66,27 +66,44 @@ def upload_file(request):
             path = '/tmp/' + table_name + '.csv'
             with open(path, 'w') as f:
                 f.write(fcontent)
+            print path
 
             try:
-                db_url = make_url(os.environ['DATABASE_URL'])
+                db_host = URL.host
+                db_user = URL.username
+                db_pw = URL.password
             except KeyError:
-                raise KeyError('Set the DATABASE_URL environmental variable')
+                raise KeyError('The DATABASE_URL environmental variable is not set')
 
             # Run a LOAD DATA INFILE query to create a table in the data warehouse
-            with connection.cursor() as cursor: 
-                create_table_q = subprocess.check_output(['csvsql', path])
-                query = r"""
-                    {create_table}
-                    LOAD DATA LOCAL INFILE "{path}" INTO TABLE {name}
-                    FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
-                    IGNORE 1 LINES;
-                    """.format(create_table=create_table_q, path=path, name=table_name)
-                try:
-                    cursor.execute(query) # Create the table and load in the data
-                except OperationalError: 
-                    messages.add_message(request, messages.ERROR, 
-                        'The database already contains a table named {}. Please try again.'.format(table_name))
-                    return render(request, 'upload.html', {'form': form})
+            connection  = MySQLdb.connect(host=db_host, 
+                user=db_user, 
+                passwd=db_pw, 
+                db=db_name,
+                local_infile=True)
+            cursor = connection.cursor()
+
+            # Use csvkit to generate a CREATE TABLE statement based on the values
+            # in the csv
+            create_table_q = subprocess.check_output(['csvsql', path])
+            query = r"""
+                {create_table}
+                LOAD DATA LOCAL INFILE "{path}" INTO TABLE {name}
+                FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
+                IGNORE 1 LINES;
+                """.format(create_table=create_table_q, path=path, name=table_name)
+
+            # Create the table and load in the data
+            try:
+                cursor.execute(query)
+                cursor.close()
+                connection.commit() # Have to commit to make LOAD INFILE work
+                connection.close()
+            except OperationalError:
+                messages.add_message(request, messages.ERROR, 
+                    'The database already contains a table named {}. Please try again.'.format(table_name))
+                return render(request, 'upload.html', {'form': form})
+            
 
             # Return a preview of the top few rows in the table
             # and check if the casting is correct
