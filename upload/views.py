@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.db import connection, OperationalError
+from django.conf import settings
 
 # Third-party imports
 import boto3, botocore
@@ -29,18 +30,20 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 # TODO accept more than one file
 
 def upload_file(request):
-    if request.method == 'GET':
-        form = DataForm()
-        return render(request, 'upload.html', {'form': form})
-
-    elif request.method == 'POST':
-        form = DataForm(request.POST, request.FILES)
-        if not form.is_valid():
-            return render(request, 'upload.html', {'form', form})
-        else:
+    form = DataForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
-            db_name = form.cleaned_data['']
+            db_name = settings.DATABASES['default']['NAME']
+            table_name = form.cleaned_data['table_name']
+            topic = form.cleaned_data['topic']
+            reporter_name = form.cleaned_data['reporter_name']
+            next_aquisition = form.cleaned_data['next_aquisition']
+            owner = form.cleaned_data['owner']
+            press_contact = form.cleaned_data['press_contact']
+            press_contact_number = form.cleaned_data['press_contact_number']
+            press_contact_email =  form.cleaned_data['press_contact_email']
 
             # Access bucket using credentials in ~/.aws/credentials
             s3 = boto3.resource('s3')
@@ -50,7 +53,7 @@ def upload_file(request):
             # S3 bucket, and if so throw an error and return to the index
             # page
             try:
-                bucket.download_file(fkey, '/tmp/s3_test_file')
+                bucket.download_file(table_name, '/tmp/s3_test_file')
                 messages.add_message(request, messages.ERROR, 'A file with that name already exists')
                 return render(request, 'upload.html', {'form': form})
             except botocore.exceptions.ClientError:
@@ -58,7 +61,7 @@ def upload_file(request):
 
             # Write the file to the /tmp/ directory, then use
             # csvkit to generate the CREATE TABLE query
-            path = '/tmp/' + fkey
+            path = '/tmp/' + table_name + '.csv'
             with open(path, 'w') as f:
                 f.write(fcontent)
 
@@ -70,12 +73,12 @@ def upload_file(request):
                     LOAD DATA LOCAL INFILE "{path}" INTO TABLE {name}
                     FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
                     IGNORE 1 LINES;
-                    """.format(create_table=create_table_q, path=path, name=fkey[:-4])
+                    """.format(create_table=create_table_q, path=path, name=table_name)
                 try:
                     cursor.execute(query) # Create the table and load in the data
                 except OperationalError: 
                     messages.add_message(request, messages.ERROR, 
-                        'The database already contains a table named {}. Please try again.'.format(fkey[:-4]))
+                        'The database already contains a table named {}. Please try again.'.format(table_name))
                     return render(request, 'upload.html', {'form': form})
 
             # Return a preview of the top few rows in the table
@@ -85,5 +88,5 @@ def upload_file(request):
 
             # Write the file to Amazon S3
             # bucket.put_object(Key=fkey, Body=fcontent)
-            return HttpResponse('File uploaded to S3.<br>')
+    return render(request, 'upload.html', {'form': form})
 
