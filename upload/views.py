@@ -65,7 +65,7 @@ def upload_file(request):
             # Write the file to Amazon S3
             bucket.put_object(Key='{db_name}/{today}/original/{filename}'.format(
                 db_name = db_name, 
-                today = date.today().isoformat()
+                today = date.today().isoformat(),
                 filename = fkey), Body=fcontent)
 
             # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
