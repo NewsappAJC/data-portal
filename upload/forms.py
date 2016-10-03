@@ -9,7 +9,8 @@ REPORTERS = (
 
 class DataForm(forms.Form):
     file = forms.FileField()
-    table_name = forms.CharField(label='Dataset name (eg: ga_doc_incidents)', max_length=100)
+    db_name = forms.CharField(label='Create or use an existing database')
+    table_name = forms.CharField(label='Table name', max_length=100)
     topic = forms.CharField(label='Topic', max_length=100)
     reporter_name = forms.ChoiceField(label='Reporter who got this data', choices=REPORTERS)
     next_aquisition = forms.DateField(label='When to update dataset', widget=forms.SelectDateWidget)

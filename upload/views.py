@@ -7,7 +7,6 @@ import subprocess
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
-from django.template import RequestContext
 from django.db import connection, OperationalError
 
 # Third-party imports
@@ -35,10 +34,13 @@ def upload_file(request):
         return render(request, 'upload.html', {'form': form})
 
     elif request.method == 'POST':
-        form = DataForm(request.POST)
-        if form.is_valid():
+        form = DataForm(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request, 'upload.html', {'form', form})
+        else:
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
+            db_name = form.cleaned_data['']
 
             # Access bucket using credentials in ~/.aws/credentials
             s3 = boto3.resource('s3')
@@ -62,13 +64,13 @@ def upload_file(request):
 
             # Run a LOAD DATA INFILE query to create a table in the data warehouse
             with connection.cursor() as cursor: 
-                create_table_query = subprocess.check_output(['csvsql', path])
+                create_table_q = subprocess.check_output(['csvsql', path])
                 query = r"""
                     {create_table}
                     LOAD DATA LOCAL INFILE "{path}" INTO TABLE {name}
                     FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
                     IGNORE 1 LINES;
-                    """.format(create_table=create_table_query, path=path, name=fkey[:-4])
+                    """.format(create_table=create_table_q, path=path, name=fkey[:-4])
                 try:
                     cursor.execute(query) # Create the table and load in the data
                 except OperationalError: 
@@ -84,6 +86,4 @@ def upload_file(request):
             # Write the file to Amazon S3
             # bucket.put_object(Key=fkey, Body=fcontent)
             return HttpResponse('File uploaded to S3.<br>')
-        else:
-            return render(request, 'upload.html', {'form', form})
 
