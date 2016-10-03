@@ -63,10 +63,11 @@ def upload_file(request):
                 pass
 
             # Write the file to Amazon S3
-            bucket.put_object(Key='{db_name}/{today}/original/{filename}'.format(
+            bucket.put_object(Key='{db_name}/{today}-{table}/original/{filename}.csv'.format(
                 db_name = db_name, 
                 today = date.today().isoformat(),
-                filename = fkey), Body=fcontent)
+                table = table_name,
+                filename = table_name), Body=fcontent)
 
             # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
             path = '/tmp/' + table_name + '.csv'
@@ -110,7 +111,23 @@ def upload_file(request):
                 messages.add_message(request, messages.ERROR, 
                     'The database already contains a table named {}. Please try again.'.format(table_name))
                 return render(request, 'upload.html', {'form': form})
-            
+
+            # Generate a README file
+            readme_template = open(os.path.join(settings.BASE_DIR, 'readme_template'), 'r').read()
+            readme = readme_template.format(topic=topic.upper(), 
+                    div='=' * len(topic),
+                    reporter=reporter_name, 
+                    aq=next_aquisition, 
+                    owner=owner, 
+                    contact=press_contact,
+                    number=press_contact_number,
+                    email=press_contact_email)
+
+            # Write the README to the S3 bucket
+            bucket.put_object(Key='{db_name}/{today}-{table}/README.txt'.format(
+                db_name = db_name, 
+                today = date.today().isoformat(),
+                table = table_name), Body=readme)
 
             # Return a preview of the top few rows in the table
             # and check if the casting is correct
