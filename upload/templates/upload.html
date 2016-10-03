@@ -38,7 +38,11 @@
         <table>
           {% for field in form %}
           <tr>
-              <td class="label">{{ field.label }}</td>
+              <td class="label">{{ field.label }}
+                {% if field.field.required %}
+                <span>*</span>
+                {% endif %}
+              </td>
               <td>{{ field }}</td>
               {% for error in field.errors %}
               <td>{{ error }}</td>
@@ -48,6 +52,7 @@
         </table>
         <input type="submit" value="Upload" class="file-submit"/>
       </form>
+      *Required
     </div>
     {% if messages %}
     <div class="messages">

@@ -84,22 +84,24 @@ def upload_file(request):
                 raise KeyError('The DATABASE_URL environmental variable is not set')
 
             # Create a connection to the data warehouse
-            connection  = MySQLdb.connect(host=db_host, 
+            connection = MySQLdb.connect(host=db_host, 
                 user=db_user, 
                 passwd=db_pw, 
-                db=db_name,
                 local_infile=True)
             cursor = connection.cursor()
+
+            # Check if a database with the given name exists. If it doesn't, create one.
+            cursor.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
 
             # Use csvkit to generate a CREATE TABLE statement based on the data types
             # in the csv
             create_table_q = subprocess.check_output(['csvsql', path])
             query = r"""
                 {create_table}
-                LOAD DATA LOCAL INFILE "{path}" INTO TABLE {name}
+                LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
                 FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
                 IGNORE 1 LINES;
-                """.format(create_table=create_table_q, path=path, name=table_name)
+                """.format(create_table=create_table_q, path=path, db=db_name, table==table_name)
 
             # Create the table and load in the data
             try:
