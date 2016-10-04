@@ -6,7 +6,7 @@ import logging
 from datetime import date
 
 # Django imports
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.db import OperationalError
@@ -29,7 +29,6 @@ logger.setLevel(logging.DEBUG)
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = make_url(os.environ['DATABASE_URL'])
 
-
 #------------------------------------#
 # Take file uploaded by user, use
 # csvkit to generate a DB schema, and write
@@ -44,6 +43,7 @@ def upload_file(request):
         if form.is_valid():
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
+
             delimiter = form.cleaned_data['delimiter']
             db_name = form.cleaned_data['db_name']
             table_name = form.cleaned_data['table_name']
@@ -140,9 +140,8 @@ def upload_file(request):
             # Create the table and load in the data
             try:
                 cursor.execute(query)
-                cursor.close()
+                cursor.close() # Have to close cursor before you can commit
                 connection.commit() # Have to commit to make LOAD INFILE work
-                connection.close()
             except OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
                 messages.add_message(request, messages.ERROR, 
                     'The database already contains a table named {}. Please try again.'.format(table_name))
@@ -151,11 +150,27 @@ def upload_file(request):
             logger.debug('File loaded into SQL server')
 
             # Return a preview of the top few rows in the table
-            # to check if the casting is correct
-            return HttpResponseRedirect('/check-casting/')
+            # to check if the casting is correct. Save data to session
+            # so that it can be accessed by other views
+            cursor = connection.cursor() # Create a new cursor to query the table created
+            cursor.execute('SELECT * FROM {}'.format(table_name))
+            data = cursor.fetchall()
+
+            dataf = [list(x) for x in data] # fetchall() returns a tuple, so convert to list for editing
+            dataf.insert(0, [x[0] for x in cursor.description])
+            request.session['preview_data'] = dataf[:5]
+            return redirect('check-casting')
 
             # After running the create table query, return a
             # log of the issues that need to be fixed if any
 
     return render(request, 'upload.html', {'form': form})
 
+#----------------------------------
+# Display a table with the first 
+# few rows from the new database so the 
+# user can confirm that the data is cast correctly
+#----------------------------------
+def check_casting(request):
+    data = request.session['preview_data']
+    return render(request, 'check-casting.html', {'data': data})

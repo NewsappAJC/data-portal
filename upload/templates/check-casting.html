@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    Check that the columns are cast correctly
+    <table>
+    {% for row in data %}
+      <tr>
+        {% for el in row %}
+          <td>{{ el }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </table>
+  </body>
+</html>
