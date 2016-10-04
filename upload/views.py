@@ -9,7 +9,6 @@ from datetime import date
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
-from django.db import OperationalError
 from django.conf import settings
 
 # Third-party imports
@@ -138,9 +137,10 @@ def upload_file(request):
                 cursor.execute(query)
                 cursor.close() # Have to close cursor before you can commit
                 connection.commit() # Have to commit to make LOAD INFILE work
-            except OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
+            except connection.OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
                 messages.add_message(request, messages.ERROR, 
-                    'The database already contains a table named {}. Please try again.'.format(table_name))
+                    '''The database already contains a table named {}. 
+                    Please try again with a different name.'''.format(table_name))
                 return render(request, 'upload.html', {'form': form})
 
             logging.info('Data loaded into SQL server')

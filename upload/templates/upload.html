@@ -28,6 +28,7 @@
       margin-top: 10px;
     }
     .messages {
+      text-align: center;
       color: red;
     }
     .label {
@@ -60,13 +61,13 @@
         </table>
         <input type="submit" value="Upload" class="file-submit"/>
       </form>
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <p>{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
-    {% if messages %}
-    <div class="messages">
-      {% for message in messages %}
-        <p>{{ message }}</p>
-      {% endfor %}
-    </div>
-    {% endif %}
   </body>
 </html>
