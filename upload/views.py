@@ -21,10 +21,6 @@ import MySQLdb
 # Local imports
 from .forms import DataForm
 
-# Define a logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = make_url(os.environ['DATABASE_URL'])
@@ -92,7 +88,7 @@ def upload_file(request):
                 today = date.today().isoformat(),
                 table = table_name), Body=readme)
             
-            logger.debug('File written to S3 bucket')
+            logging.info('File written to S3 bucket')
 
             # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
             path = '/tmp/' + table_name + '.csv'
@@ -116,12 +112,12 @@ def upload_file(request):
                 local_infile=True)
             cursor = connection.cursor()
 
-            logger.debug('Connected to MySQL server')
+            logging.info('Connected to MySQL server')
 
             # Check if a database with the given name exists. If it doesn't, create one.
             cursor.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
             connection.select_db(db_name)
-            logger.debug('Using database {}'.format(db_name))
+            logging.info('Using database {}'.format(db_name))
 
             # Use csvkit to generate a CREATE TABLE statement based on the data types
             # in the csv
@@ -147,7 +143,7 @@ def upload_file(request):
                     'The database already contains a table named {}. Please try again.'.format(table_name))
                 return render(request, 'upload.html', {'form': form})
 
-            logger.debug('File loaded into SQL server')
+            logging.info('Data loaded into SQL server')
 
             # Return a preview of the top few rows in the table
             # to check if the casting is correct. Save data to session
@@ -157,20 +153,13 @@ def upload_file(request):
             data = cursor.fetchall()
 
             dataf = [list(x) for x in data] # fetchall() returns a tuple, so convert to list for editing
-            dataf.insert(0, [x[0] for x in cursor.description])
-            request.session['preview_data'] = dataf[:5]
-            return redirect('check-casting')
+            headers = [x[0] for x in cursor.description]
 
-            # After running the create table query, return a
-            # log of the issues that need to be fixed if any
+            # MySQLdb doesn't automatically garbage collect connections so close them here
+            cursor.close()
+            connection.close()
+
+            return render(request, 'check-casting.html', {'data': dataf, 'headers': headers, 'bucket': BUCKET_NAME, 'db': db_name})
 
     return render(request, 'upload.html', {'form': form})
 
-#----------------------------------
-# Display a table with the first 
-# few rows from the new database so the 
-# user can confirm that the data is cast correctly
-#----------------------------------
-def check_casting(request):
-    data = request.session['preview_data']
-    return render(request, 'check-casting.html', {'data': data})

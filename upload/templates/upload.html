@@ -9,12 +9,17 @@
     }
     .upload-form {
       position: relative;
-      width: 500px;
+      width: 700px;
       padding: 20px;
       left: 50%;
       transform: translateX(-50%);
       border: 2px solid black;
       top: 50px;
+    }
+    table.form-fields {
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
     }
     .file-submit {
       position: relative;
@@ -28,6 +33,10 @@
     .label {
       text-align: right;
     }
+    .error {
+      color: red;
+      font-size: 12px;
+    }
   </style>
   </head>
   <body>
@@ -35,24 +44,22 @@
       <h2 style="text-align:center;">AJC Data Upload</h2>
       <form enctype="multipart/form-data" action="/" method="post">
         {% csrf_token %}
-        <table>
+        <table class="form-fields">
           {% for field in form %}
           <tr>
-              <td class="label">{{ field.label }}
-                {% if field.field.required %}
-                <span>*</span>
-                {% endif %}
+              <td class="label">
+                {{ field.label }}
               </td>
-              <td>{{ field }}</td>
-              {% for error in field.errors %}
-              <td>{{ error }}</td>
-              {% endfor %}
+              <td>{{ field }}
+                {% for error in field.errors %}
+                  <span class="error">{{ error }}</span>
+                {% endfor %}
+              </td>
           </tr>
           {% endfor %}
         </table>
         <input type="submit" value="Upload" class="file-submit"/>
       </form>
-      *Required
     </div>
     {% if messages %}
     <div class="messages">
