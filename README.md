@@ -19,6 +19,8 @@ $ pip install -r requirements.txt
 
 * Set S3_BUCKET environmental variable to your s3 bucket name
 
+* Add a user named `data_warehouse` with access to your S3 bucket to your `.aws/config`. For instructions on how to create a user in data_warehouse consult the Amazon documentation at [docs.aws.amazon.com](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
+
 Run dev server
 ---
 ```

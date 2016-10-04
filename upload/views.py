@@ -51,7 +51,8 @@ def upload_file(request):
             press_contact_email =  form.cleaned_data['press_contact_email']
 
             # Access S3 bucket using credentials in ~/.aws/credentials
-            s3 = boto3.resource('s3')
+            session = boto3.Session(profile_name='data_warehouse')
+            s3 = session.resource('s3')
             bucket = s3.Bucket(BUCKET_NAME)
 
             # Check if a file with the same name already exists in the
