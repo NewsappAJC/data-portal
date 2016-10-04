@@ -2,6 +2,7 @@
 import os
 import time
 import subprocess
+import logging
 from datetime import date
 
 # Django imports
@@ -19,6 +20,10 @@ import MySQLdb
 
 # Local imports
 from .forms import DataForm
+
+# Define a logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
@@ -39,6 +44,7 @@ def upload_file(request):
         if form.is_valid():
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
+            delimiter = form.cleaned_data['delimiter']
             db_name = form.cleaned_data['db_name']
             table_name = form.cleaned_data['table_name']
             topic = form.cleaned_data['topic']
@@ -69,51 +75,6 @@ def upload_file(request):
                 table = table_name,
                 filename = table_name), Body=fcontent)
 
-            # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
-            path = '/tmp/' + table_name + '.csv'
-            with open(path, 'w') as f:
-                f.write(fcontent)
-            print path
-
-            # Try to get database parameters from the $DATABASE_URL environmental variable
-            try:
-                db_host = URL.host
-                db_user = URL.username
-                db_pw = URL.password
-            except KeyError:
-                raise KeyError('The DATABASE_URL environmental variable is not set')
-
-            # Create a connection to the data warehouse
-            connection = MySQLdb.connect(host=db_host, 
-                user=db_user, 
-                passwd=db_pw, 
-                local_infile=True)
-            cursor = connection.cursor()
-
-            # Check if a database with the given name exists. If it doesn't, create one.
-            cursor.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
-
-            # Use csvkit to generate a CREATE TABLE statement based on the data types
-            # in the csv
-            create_table_q = subprocess.check_output(['csvsql', path])
-            query = r"""
-                {create_table}
-                LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
-                FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
-                IGNORE 1 LINES;
-                """.format(create_table=create_table_q, path=path, db=db_name, table==table_name)
-
-            # Create the table and load in the data
-            try:
-                cursor.execute(query)
-                cursor.close()
-                connection.commit() # Have to commit to make LOAD INFILE work
-                connection.close()
-            except OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
-                messages.add_message(request, messages.ERROR, 
-                    'The database already contains a table named {}. Please try again.'.format(table_name))
-                return render(request, 'upload.html', {'form': form})
-
             # Generate a README file
             readme_template = open(os.path.join(settings.BASE_DIR, 'readme_template'), 'r').read()
             readme = readme_template.format(topic=topic.upper(), 
@@ -130,9 +91,69 @@ def upload_file(request):
                 db_name = db_name, 
                 today = date.today().isoformat(),
                 table = table_name), Body=readme)
+            
+            logger.debug('File written to S3 bucket')
+
+            # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
+            path = '/tmp/' + table_name + '.csv'
+            with open(path, 'w') as f:
+                f.write(fcontent)
+            print path
+
+            # Try to get database parameters from the $DATABASE_URL environmental variable
+            try:
+                db_host = URL.host
+                db_user = URL.username
+                db_pw = URL.password
+            except KeyError:
+                raise KeyError('The DATABASE_URL environmental variable is not set')
+
+            # Create a connection to the data warehouse 
+            # TODO add a try-except here in case the DB connection fails
+            connection = MySQLdb.connect(host=db_host, 
+                user=db_user, 
+                passwd=db_pw, 
+                local_infile=True)
+            cursor = connection.cursor()
+
+            logger.debug('Connected to MySQL server')
+
+            # Check if a database with the given name exists. If it doesn't, create one.
+            cursor.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
+            connection.select_db(db_name)
+            logger.debug('Using database {}'.format(db_name))
+
+            # Use csvkit to generate a CREATE TABLE statement based on the data types
+            # in the csv
+            create_table_q = subprocess.check_output(['csvsql', path])
+            query = r"""
+                {create_table}
+                LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
+                FIELDS TERMINATED BY "{delimiter}" LINES TERMINATED BY "\n"
+                IGNORE 1 LINES;
+                """.format(create_table=create_table_q,
+                        path=path,
+                        db=db_name,
+                        table=table_name,
+                        delimiter=delimiter)
+
+            # Create the table and load in the data
+            try:
+                cursor.execute(query)
+                cursor.close()
+                connection.commit() # Have to commit to make LOAD INFILE work
+                connection.close()
+            except OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
+                messages.add_message(request, messages.ERROR, 
+                    'The database already contains a table named {}. Please try again.'.format(table_name))
+                return render(request, 'upload.html', {'form': form})
+
+            logger.debug('File loaded into SQL server')
 
             # Return a preview of the top few rows in the table
-            # and check if the casting is correct
+            # to check if the casting is correct
+            return HttpResponseRedirect('/check-casting/')
+
             # After running the create table query, return a
             # log of the issues that need to be fixed if any
 
