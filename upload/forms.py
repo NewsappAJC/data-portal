@@ -8,8 +8,8 @@ REPORTERS = (
 )
 
 DELIMITERS = (
-    (',', ','),
-    (';', ';')
+    (',', 'comma'),
+    (';', 'semicolon')
 )
 
 class DataForm(forms.Form):
