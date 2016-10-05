@@ -3,6 +3,7 @@
   <head>
   </head>
   <body>
+    <h2>AJC Data Upload</h2>
     <form action="/login/" enctype="multipart/form-data" method="POST">
       {% csrf_token %}
       <table>
@@ -15,5 +16,12 @@
       </table>
       <button type="submit">Log in</button>
     </form>
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <p>{{ message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
   </body>
 <html>

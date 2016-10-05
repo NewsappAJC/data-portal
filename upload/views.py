@@ -9,6 +9,7 @@ from datetime import date
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.conf import settings
 
 # Third-party imports
@@ -175,3 +176,7 @@ def upload_file(request):
 
     return render(request, 'upload.html', {'form': form})
 
+def logout_user(request):
+    logout(request)
+    messages.add_message(request, messages.ERROR, 'You have been logged out')
+    return redirect('/login/')

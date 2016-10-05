@@ -6,5 +6,6 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.upload_file),
-    url(r'^login/$', auth_views.login)
+    url(r'^login/$', auth_views.login),
+    url(r'^logout/$', views.logout_user)
 ]
