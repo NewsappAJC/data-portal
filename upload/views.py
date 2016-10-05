@@ -22,7 +22,7 @@ from .forms import DataForm
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = make_url(os.environ['DATABASE_URL'])
+URL = make_url(os.environ['DATA_WAREHOUSE_URL'])
 
 #------------------------------------#
 # Take file uploaded by user, use
@@ -86,7 +86,7 @@ def upload_file(request):
                 db_name = db_name, 
                 today = date.today().isoformat(),
                 table = table_name), Body=readme)
-            
+
             logging.info('File written to S3 bucket')
 
             # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
@@ -114,7 +114,7 @@ def upload_file(request):
             except connection.OperationalError:
                 messages.add_message(request, messages.ERROR, 
                     '''There is something wrong with the credentials in $DATABASE_URL.
-                    Please make sure you have access to the MySQL database.'''
+                    Please make sure you have access to the MySQL database.''')
                 return render(request, 'upload.html', {'form': form})
 
             logging.info('Connected to MySQL server')

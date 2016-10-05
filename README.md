@@ -14,8 +14,9 @@ Installation
 ```
 $ pip install -r requirements.txt
 ```
+* Set the DATABASE_URL environmental variable to a user with access to the MySQL server. Use the following format: `mysql://USER:PASSWORD@HOST:PORT/NAME`. This will be the user account Django uses to update the server.
 
-* Set DATABASE_URL environmental variable to `mysql://USER:PASSWORD@HOST:PORT/NAME. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements.
+* Set the DATA_WAREHOUSE_URL environmental variable, using the same format as above. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. This is the account with permissions restricted to "CREATE" that will add files uploaded by users to the database.
 
 * Set S3_BUCKET environmental variable to your s3 bucket name
 
