@@ -147,7 +147,7 @@ def upload_file(request):
                 cursor.execute(query)
                 cursor.close() # Have to close cursor before you can commit
                 connection.commit() # Have to commit to make LOAD INFILE work
-            except connection.OperationalError: # TODO Ensure this error is actually occurring due to duplicate tables
+            except connection.OperationalError: # TODO FIX THIS!! 
                 messages.add_message(request, messages.ERROR, 
                     '''The database already contains a table named {}. 
                     Please try again with a different name.'''.format(table_name))
@@ -162,7 +162,7 @@ def upload_file(request):
             cursor.execute('SELECT * FROM {}'.format(table_name))
             data = cursor.fetchall()
 
-            dataf = [list(x) for x in data] # fetchall() returns a tuple, so convert to list for editing
+            dataf = [list(x) for x in data][:5] # fetchall() returns a tuple, so convert to list for editing
             headers = [x[0] for x in cursor.description]
 
             # MySQLdb doesn't automatically garbage collect connections so close them here
