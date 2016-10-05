@@ -32,6 +32,10 @@ URL = make_url(os.environ['DATA_WAREHOUSE_URL'])
 #------------------------------------#
 # TODO accept more than one file
 def upload_file(request):
+    # Check that the user is authenticated. If not, redirect to the login page
+    if not request.user.is_authenticated:
+        return redirect('{}?next={}'.format(settings.LOGIN_URL, request.path))
+
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
@@ -104,7 +108,6 @@ def upload_file(request):
                 raise KeyError('The DATABASE_URL environmental variable is not set')
 
             # Create a connection to the data warehouse 
-            # TODO add a try-except here in case the DB connection fails
             try:
                 connection = MySQLdb.connect(host=db_host, 
                     user=db_user, 

@@ -24,3 +24,4 @@ class DataForm(forms.Form):
     press_contact = forms.CharField(label='Press contact name', max_length=100, required=False)
     press_contact_number = forms.CharField(label='Press contact number', max_length=100, required=False)
     press_contact_email = forms.EmailField(label='Press contact email', required=False)
+

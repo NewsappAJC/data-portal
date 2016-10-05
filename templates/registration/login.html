@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <form action="/login/" enctype="multipart/form-data" method="POST">
+      {% csrf_token %}
+      <table>
+        {% for field in form %}
+          <tr>
+            <td>{{ field.label }}</td>
+            <td>{{ field }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+      <button type="submit">Log in</button>
+    </form>
+  </body>
+<html>
