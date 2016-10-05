@@ -100,13 +100,13 @@ def upload_file(request):
                 f.write(fcontent)
             print path
 
-            # Try to get database parameters from the $DATABASE_URL environmental variable
+            # Try to get database parameters from the $DATA_WAREHOUSE_URL environmental variable
             try:
                 db_host = URL.host
                 db_user = URL.username
                 db_pw = URL.password
             except KeyError:
-                raise KeyError('The DATABASE_URL environmental variable is not set')
+                raise KeyError('The $DATA_WAREHOUSE_URL environmental variable is not set')
 
             # Create a connection to the data warehouse 
             try:
@@ -117,7 +117,7 @@ def upload_file(request):
                 cursor = connection.cursor()
             except connection.OperationalError:
                 messages.add_message(request, messages.ERROR, 
-                    '''There is something wrong with the credentials in $DATABASE_URL.
+                    '''There is something wrong with the credentials in $DATA_WAREHOUSE_URL.
                     Please make sure you have access to the MySQL database.''')
                 return render(request, 'upload.html', {'form': form})
 

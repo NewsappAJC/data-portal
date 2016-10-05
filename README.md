@@ -9,7 +9,13 @@ The app is configured for deployment on Heroku, so it uses the ClearDB add-on to
 
 Installation
 ---
-* Install dependencies
+* Install mysql
+
+```
+apt-get install mysql
+```
+
+* Install python dependencies
 
 ```
 $ pip install -r requirements.txt
@@ -18,9 +24,9 @@ $ pip install -r requirements.txt
 
 * Set the DATA_WAREHOUSE_URL environmental variable, using the same format as above. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. This is the account with permissions restricted to "CREATE" that will add files uploaded by users to the database.
 
-* Set S3_BUCKET environmental variable to your s3 bucket name
+* Set S3_BUCKET environmental variable to your Amazon S3 bucket name
 
-* Add a user named `data_warehouse` with access to your S3 bucket to your `.aws/config`. For instructions on how to create a user in data_warehouse consult the Amazon documentation at [docs.aws.amazon.com](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
+* Add a user named `data_warehouse` with access to your S3 bucket to your `.aws/config` file. For instructions on how to create a user in consult the Amazon documentation at [docs.aws.amazon.com](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
 
 Run dev server
 ---
