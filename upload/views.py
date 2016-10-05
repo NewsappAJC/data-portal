@@ -38,7 +38,6 @@ def upload_file(request):
         if form.is_valid():
             # Assign form values to variables
             fcontent = form.cleaned_data['file'].read()
-
             delimiter = form.cleaned_data['delimiter']
             db_name = form.cleaned_data['db_name']
             table_name = form.cleaned_data['table_name']
@@ -106,11 +105,17 @@ def upload_file(request):
 
             # Create a connection to the data warehouse 
             # TODO add a try-except here in case the DB connection fails
-            connection = MySQLdb.connect(host=db_host, 
-                user=db_user, 
-                passwd=db_pw, 
-                local_infile=True)
-            cursor = connection.cursor()
+            try:
+                connection = MySQLdb.connect(host=db_host, 
+                    user=db_user, 
+                    passwd=db_pw, 
+                    local_infile=True)
+                cursor = connection.cursor()
+            except connection.OperationalError:
+                messages.add_message(request, messages.ERROR, 
+                    '''There is something wrong with the credentials in $DATABASE_URL.
+                    Please make sure you have access to the MySQL database.'''
+                return render(request, 'upload.html', {'form': form})
 
             logging.info('Connected to MySQL server')
 
@@ -160,7 +165,10 @@ def upload_file(request):
             cursor.close()
             connection.close()
 
-            return render(request, 'check-casting.html', {'data': dataf, 'headers': headers, 'bucket': BUCKET_NAME, 'db': db_name})
+            return render(request, 'check-casting.html', {'data': dataf,
+                'headers': headers,
+                'bucket': BUCKET_NAME,
+                'db': db_name})
 
     return render(request, 'upload.html', {'form': form})
 
