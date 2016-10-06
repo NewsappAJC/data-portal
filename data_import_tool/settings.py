@@ -107,9 +107,6 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 
-# Redis configuration
-REDIS_URL = os.environ.get('REDIS_URL')
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
@@ -122,6 +119,10 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+BROKER_URL = os.environ.get('REDIS_URL')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
+CELERY_IMPORTS = (os.path.join(BASE_DIR, 'upload/tasks'))
 
 
 # Static files (CSS, JavaScript, Images)
