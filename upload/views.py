@@ -68,6 +68,7 @@ def upload_file(request):
             except botocore.exceptions.ClientError:
                 pass
 
+
             # Write the file to Amazon S3
             bucket.put_object(Key='{db_name}/{today}-{table}/original/{filename}.csv'.format(
                 db_name = db_name, 
