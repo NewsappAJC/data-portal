@@ -20,6 +20,7 @@ from sqlalchemy.engine.url import make_url # Used to parse database information 
 
 # Local imports
 from .forms import DataForm
+from .tasks import add
 
 # Set constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
@@ -33,6 +34,8 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 #------------------------------------#
 # TODO accept more than one file
 def upload_file(request):
+    add.delay(34,35)
+    return HttpResponse('hi there')
     # Check that the user is authenticated. If not, redirect to the login page
     if not request.user.is_authenticated:
         return redirect('{}?next={}'.format(settings.LOGIN_URL, request.path))
