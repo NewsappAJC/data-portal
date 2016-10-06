@@ -15,15 +15,15 @@ from django.conf import settings
 # Third-party imports
 import boto3, botocore
 import csvkit
+import sqlalchemy
 from sqlalchemy.engine.url import make_url # Used to parse database information from env variable
-import MySQLdb
 
 # Local imports
 from .forms import DataForm
 
-# Constants
+# Set constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = make_url(os.environ['DATA_WAREHOUSE_URL'])
+URL = os.environ['DATA_WAREHOUSE_URL']
 
 #------------------------------------#
 # Take file uploaded by user, use
@@ -100,32 +100,13 @@ def upload_file(request):
                 f.write(fcontent)
             print path
 
-            # Try to get database parameters from the $DATA_WAREHOUSE_URL environmental variable
-            try:
-                db_host = URL.host
-                db_user = URL.username
-                db_pw = URL.password
-            except KeyError:
-                raise KeyError('The $DATA_WAREHOUSE_URL environmental variable is not set')
-
             # Create a connection to the data warehouse 
-            try:
-                connection = MySQLdb.connect(host=db_host, 
-                    user=db_user, 
-                    passwd=db_pw, 
-                    local_infile=True)
-                cursor = connection.cursor()
-            except connection.OperationalError:
-                messages.add_message(request, messages.ERROR, 
-                    '''There is something wrong with the credentials in $DATA_WAREHOUSE_URL.
-                    Please make sure you have access to the MySQL database.''')
-                return render(request, 'upload.html', {'form': form})
-
-            logging.info('Connected to MySQL server')
+            engine = sqlalchemy.create_engine(URL + '?local_infile=1')
+            connection = engine.connect()
 
             # Check if a database with the given name exists. If it doesn't, create one.
-            cursor.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
-            connection.select_db(db_name)
+            connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
+            connection.execute('USE {}'.format(db_name))
             logging.info('Using database {}'.format(db_name))
 
             # Use csvkit to generate a CREATE TABLE statement based on the data types
@@ -143,33 +124,15 @@ def upload_file(request):
                         delimiter=delimiter)
 
             # Create the table and load in the data
-            try:
-                cursor.execute(query)
-                cursor.close() # Have to close cursor before you can commit
-                connection.commit() # Have to commit to make LOAD INFILE work
-            except connection.OperationalError: # TODO FIX THIS!! 
-                messages.add_message(request, messages.ERROR, 
-                    '''The database already contains a table named {}. 
-                    Please try again with a different name.'''.format(table_name))
-                return render(request, 'upload.html', {'form': form})
-
-            logging.info('Data loaded into SQL server')
+            connection.execute(query)
 
             # Return a preview of the top few rows in the table
             # to check if the casting is correct. Save data to session
             # so that it can be accessed by other views
-            cursor = connection.cursor() # Create a new cursor to query the table created
-            cursor.execute('SELECT * FROM {}'.format(table_name))
-            data = cursor.fetchall()
+            data = connection.execute('SELECT * FROM {}'.format(table_name))
+            headers = data.keys()
 
-            dataf = [list(x) for x in data][:5] # fetchall() returns a tuple, so convert to list for editing
-            headers = [x[0] for x in cursor.description]
-
-            # MySQLdb doesn't automatically garbage collect connections so close them here
-            cursor.close()
-            connection.close()
-
-            return render(request, 'check-casting.html', {'data': dataf,
+            return render(request, 'check-casting.html', {'data': data,
                 'headers': headers,
                 'bucket': BUCKET_NAME,
                 'db': db_name})
