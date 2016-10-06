@@ -20,9 +20,14 @@ apt-get install mysql
 ```
 $ pip install -r requirements.txt
 ```
+
+Because this tool needs access to a couple different databases, S3 and a Redis datastore, it's necessary to set a few environmental variables. All the necessary environmental variables are listed below.
+
 * Set the DATABASE_URL environmental variable to a user with access to the MySQL server. Use the following format: `mysql://USER:PASSWORD@HOST:PORT/NAME`. This will be the user account Django uses to update the server.
 
 * Set the DATA_WAREHOUSE_URL environmental variable, using the same format as above. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. This is the account with permissions restricted to "CREATE" that will add files uploaded by users to the database.
+
+* Set the REDIS_URL environmental variable to the url of your Redis store. If you're using the Redis Heroku addon, you can get that url by running `heroku config | grep REDIS`
 
 * Set S3_BUCKET environmental variable to your Amazon S3 bucket name
 
