@@ -120,11 +120,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-BROKER_URL = os.environ.get('REDIS_URL')
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
-CELERY_IMPORTS = (os.path.join(BASE_DIR, 'upload/tasks'))
-
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
