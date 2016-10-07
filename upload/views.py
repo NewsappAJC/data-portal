@@ -36,7 +36,6 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 #------------------------------------#
 # TODO accept more than one file
 def upload_file(request):
-    fuck.delay(34,35)
     return HttpResponse('hi there')
     # Check that the user is authenticated. If not, redirect to the login page
     if not request.user.is_authenticated:

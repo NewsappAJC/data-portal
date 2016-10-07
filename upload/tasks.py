@@ -35,4 +35,3 @@ def load_infile(x,y):
     # so that it can be accessed by other views
     data = connection.execute('SELECT * FROM {}'.format(table_name))
     headers = data.keys()
-
