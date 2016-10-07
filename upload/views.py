@@ -20,7 +20,9 @@ from sqlalchemy.engine.url import make_url # Used to parse database information 
 
 # Local imports
 from .forms import DataForm
-from .tasks import fuck
+# Have to do an absolute import here for celery. See
+# http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
+from upload.tasks import fuck 
 
 # Set constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')

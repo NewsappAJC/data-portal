@@ -1,9 +1,7 @@
 from __future__ import absolute_import
-import os
 
-from tasks.celery import app
+from celery import shared_task
 
-@app.task
+@shared_task
 def fuck(x,y):
-    logger.info('Added numbers beep boop')
     return x + y
