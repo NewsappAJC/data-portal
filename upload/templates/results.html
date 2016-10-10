@@ -10,13 +10,29 @@
     <div id="response"></div>
 
     <script>
-      $.ajax({
-        type: 'GET', 
-        url: '/check-status/',
-        success: function(res) {
-          $('#response').html(res)
-        }
-      })
+      var c = 0;
+
+      function get_result() {
+        $.ajax({
+          type: 'GET', 
+          url: '/check-status/',
+          dataType: 'application/json',
+          success: function(res) {
+            var data = JSON.parse(res);
+            if (data.status == 'PENDING') {
+              c++;
+              if (c < 10) {
+                setTimeout(get_result, 500);
+              };
+              return;
+            };
+            $('#response').html(data.result)
+            return
+          }
+        });
+      };
+
+      get_result();
     </script>
   </body>
 </html>

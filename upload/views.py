@@ -74,8 +74,17 @@ def upload_file(request):
 #------------------------------------#
 def check_task_status(request):
     p_id = request.session['id']
-    return HttpResponse(AsyncResult(p_id).result)
+    response = AsyncResult(p_id)
+    data = {
+        'status': response.status, 
+        'result': response.result
+    }
+    serialized = json.dumps(data)
+    return HttpResponse(serialized)
 
+#------------------------------------#
+# Log a user out
+#------------------------------------#
 def logout_user(request):
     logout(request)
     messages.add_message(request, messages.ERROR, 'You have been logged out')
