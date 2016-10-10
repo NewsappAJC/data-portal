@@ -14,9 +14,6 @@ from django.conf import settings
 
 # Third-party imports
 import boto3, botocore
-import csvkit
-import sqlalchemy
-from sqlalchemy.engine.url import make_url # Used to parse database information from env variable
 
 # Local imports
 from .forms import DataForm
@@ -24,9 +21,8 @@ from .forms import DataForm
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile
 
-# Set constants
+# Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = os.environ['DATA_WAREHOUSE_URL']
 
 #------------------------------------#
 # Take file uploaded by user, use
@@ -36,7 +32,6 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 #------------------------------------#
 # TODO accept more than one file
 def upload_file(request):
-    return HttpResponse('hi there')
     # Check that the user is authenticated. If not, redirect to the login page
     if not request.user.is_authenticated:
         return redirect('{}?next={}'.format(settings.LOGIN_URL, request.path))
@@ -72,7 +67,6 @@ def upload_file(request):
             except botocore.exceptions.ClientError:
                 pass
 
-
             # Write the file to Amazon S3
             bucket.put_object(Key='{db_name}/{today}-{table}/original/{filename}.csv'.format(
                 db_name = db_name, 
@@ -104,12 +98,9 @@ def upload_file(request):
             with open(path, 'w') as f:
                 f.write(fcontent)
 
-            load_infile(path, db_name, table_name, delimiter)
+            load_infile.delay(path, db_name, table_name, delimiter)
 
-            return render(request, 'check-casting.html', {'data': data,
-                'headers': headers,
-                'bucket': BUCKET_NAME,
-                'db': db_name})
+            return HttpResponse('working...')
 
     return render(request, 'upload.html', {'form': form})
 
