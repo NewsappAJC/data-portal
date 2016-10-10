@@ -20,8 +20,8 @@ def load_infile(path, db_name, table_name, delimiter=','):
     # connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
     connection.execute('USE {}'.format(db_name))
 
-    ## Use csvkit to generate a CREATE TABLE statement based on the data types
-    ## in the csv
+    # Mock create table query for testing, Jeff's util function for generating the 
+    # statement will go here.
     query = r"""
         CREATE TABLE {table} (
             name VARCHAR(8) NOT NULL,
