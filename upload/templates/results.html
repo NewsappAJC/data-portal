@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+      crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <h2>Waiting for a response</h2>
+    <div id="response"></div>
+
+    <script>
+      $.ajax({
+        type: 'GET', 
+        url: '/check-status/',
+        success: function(res) {
+          $('#response').html(res)
+        }
+      })
+    </script>
+  </body>
+</html>
+

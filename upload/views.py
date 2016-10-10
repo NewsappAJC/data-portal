@@ -1,9 +1,9 @@
 # Python standard lib imports
+import json
 import os
 import time
 import subprocess
 import logging
-from datetime import date
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -14,6 +14,7 @@ from django.conf import settings
 
 # Third-party imports
 import boto3, botocore
+from celery.result import AsyncResult
 
 # Local imports
 from .forms import DataForm
@@ -21,8 +22,6 @@ from .forms import DataForm
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile
 
-# Constants
-BUCKET_NAME = os.environ.get('S3_BUCKET')
 
 #------------------------------------#
 # Take file uploaded by user, use
@@ -53,56 +52,29 @@ def upload_file(request):
             press_contact_number = form.cleaned_data['press_contact_number']
             press_contact_email =  form.cleaned_data['press_contact_email']
 
-            # Access S3 bucket using credentials in ~/.aws/credentials
-            session = boto3.Session(profile_name='data_warehouse')
-            s3 = session.resource('s3')
-            bucket = s3.Bucket(BUCKET_NAME)
-
-            # Check if a file with the same name already exists in the
-            # S3 bucket, and if so throw an error
-            try:
-                bucket.download_file(table_name, '/tmp/s3_test_file')
-                messages.add_message(request, messages.ERROR, 'A file with that name already exists in s3')
-                return render(request, 'upload.html', {'form': form})
-            except botocore.exceptions.ClientError:
-                pass
-
-            # Write the file to Amazon S3
-            bucket.put_object(Key='{db_name}/{today}-{table}/original/{filename}.csv'.format(
-                db_name = db_name, 
-                today = date.today().isoformat(),
-                table = table_name,
-                filename = table_name), Body=fcontent)
-
-            # Generate a README file
-            readme_template = open(os.path.join(settings.BASE_DIR, 'readme_template'), 'r').read()
-            readme = readme_template.format(topic=topic.upper(), 
-                    div='=' * len(topic),
-                    reporter=reporter_name, 
-                    aq=next_aquisition, 
-                    owner=owner, 
-                    contact=press_contact,
-                    number=press_contact_number,
-                    email=press_contact_email)
-
-            # Write the README to the S3 bucket
-            bucket.put_object(Key='{db_name}/{today}-{table}/README.txt'.format(
-                db_name = db_name, 
-                today = date.today().isoformat(),
-                table = table_name), Body=readme)
-
-            logging.info('File written to S3 bucket')
-
-            # Csvkit doesn't work on files in memory, so write the file to the /tmp/ directory
+            # Load data infile doesn't work on files in memory, so write the file to the /tmp/ directory
             path = '/tmp/' + table_name + '.csv'
             with open(path, 'w') as f:
                 f.write(fcontent)
 
-            load_infile.delay(path, db_name, table_name, delimiter)
+            # Begin load data infile query as a separate task so it doesn't slow response
+            # Add the id of the process to the session so we can poll it and check if it's 
+            # successful
+            x = load_infile.delay(path, db_name, table_name, delimiter)
+            request.session['id'] = x.id
 
-            return HttpResponse('working...')
+            return redirect('/results/')
 
     return render(request, 'upload.html', {'form': form})
+
+#------------------------------------#
+# Poll to check the completion status of celery 
+# task. If task is succeeded, return a sample of the
+# data. If failed, return error message
+#------------------------------------#
+def check_task_status(request):
+    p_id = request.session['id']
+    return HttpResponse(AsyncResult(p_id).result)
 
 def logout_user(request):
     logout(request)
