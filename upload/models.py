@@ -102,6 +102,10 @@ class Column(models.Model):
         null=False
     )
     
+    column_length = models.IntegerField(
+        null=True
+    )
+    
     INFORMATION_TYPE_CHOICES = (
         ("full_name","Full Name"),
         ("last_name","Last Name"),
