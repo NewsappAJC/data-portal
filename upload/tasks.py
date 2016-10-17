@@ -1,18 +1,70 @@
 # Standard library imports
-from __future__ import absolute_import # So that python knows which celery to import
+from __future__ import absolute_import
 import os
+from time import time
+import pdb
 from datetime import date
 import subprocess
 
 # Third party imports
 import sqlalchemy
-from sqlalchemy.engine.url import make_url # Used to parse database information from env variable
+from sqlalchemy.engine.url import make_url
 from celery import shared_task
 import boto3
+
+# Local module imports
+from utils import get_column_types
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ['DATA_WAREHOUSE_URL']
+
+def load_infile_debug(delimiter=','):
+    fcontent = open('/Users/jcox/test7.csv', 'r').read()
+    db_name = 'user_cox'
+    table_name = 'table'+ str(time())[:-3]
+    path = '/Users/jcox/test7.csv'
+
+    # Create a connection to the data warehouse 
+    engine = sqlalchemy.create_engine(URL + '?local_infile=1')
+    connection = engine.connect()
+
+    # Check if a database with the given name exists. If it doesn't, create one.
+    # connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
+    connection.execute('USE {}'.format(db_name))
+
+    column_types = get_column_types(path)
+    pdb.set_trace()
+
+    # Mock create table query for testing, Jeff's util function for generating the 
+    # statement will go here.
+    # TODO change line endings to accept \r\n as well, if necessary
+    query = """
+        CREATE TABLE {table} (
+            name VARCHAR(8) NOT NULL,
+            age INTEGER NOT NULL,
+            occupation VARCHAR(9) NOT NULL
+        );
+        """.format(path=path,
+                db=db_name,
+                table=table_name,
+                delimiter=delimiter)
+
+       # LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
+       # FIELDS TERMINATED BY "{delimiter}" LINES TERMINATED BY "\n"
+       # IGNORE 1 LINES;
+
+    ## Create the table and load in the data
+    connection.execute(query)
+
+    # Return a preview of the top few rows in the table
+    # to check if the casting is correct. Save data to session
+    # so that it can be accessed by other views
+    data = connection.execute('SELECT * FROM user_cox.{}'.format(table_name))
+    headers = data.keys()
+    print data
+    print headers
+    return [headers, data]
 
 @shared_task
 def load_infile(path, db_name, table_name, delimiter=','):
@@ -49,6 +101,7 @@ def load_infile(path, db_name, table_name, delimiter=','):
     # so that it can be accessed by other views
     data = connection.execute('SELECT * FROM User_Jcox.{}'.format(table_name))
     headers = data.keys()
+    raise ValueError
     return [headers, data]
 
 @shared_task
