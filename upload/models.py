@@ -120,6 +120,7 @@ class Column(models.Model):
         ("zip","ZIP"),
         ("other_add","Other Address"),
         ("organization_name","Organization Name"),
+        ("corp_or_person","Corporate or Person Name")
     ) 
     
     information_type = models.CharField(
