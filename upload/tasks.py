@@ -65,8 +65,10 @@ def load_infile(db_name, table_name, path, delimiter=','):
     # to check if the casting is correct. Save data to session
     # so that it can be accessed by other views
     data = connection.execute('SELECT * FROM {db}.{table}'.format(**sql_args))
+    dataf = [list(value) for key, value in enumerate(data) if key < 5]
     headers = data.keys()
-    return [headers, data]
+    print dataf, headers
+    return [headers, dataf]
 
 
 def load_infile_debug(db_name='user_cox', delimiter=','):
