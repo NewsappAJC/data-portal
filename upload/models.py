@@ -102,7 +102,8 @@ class Column(models.Model):
         null=False
     )
     
-    column_length = models.IntegerField(
+    column_size = models.CharField(
+        max_length=10,
         null=True
     )
     
