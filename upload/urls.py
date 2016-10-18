@@ -9,5 +9,5 @@ urlpatterns = [
     url(r'^check-status', views.check_task_status),
     url(r'^login/$', auth_views.login),
     url(r'^logout/$', views.logout_user),
-    url(r'^results/$', TemplateView.as_view(template_name='results.html'))
+    url(r'^results/$', views.results)
 ]

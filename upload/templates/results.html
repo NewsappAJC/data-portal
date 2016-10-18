@@ -1,39 +1,18 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
   <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.1/es6-shim.min.js"></script>
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"
       integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
       crossorigin="anonymous"></script>
+    <script src="{% static "js/results.js"%}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "css/style.css" %}"
   </head>
   <body>
     <h2>Waiting for a response</h2>
-    <div id="response"></div>
-
-    <script>
-      var c = 0;
-
-      function get_result() {
-        $.ajax({
-          type: 'GET', 
-          url: '/check-status/',
-          dataType: 'application/json',
-          success: function(res) {
-            var data = JSON.parse(res);
-            if (data.status == 'PENDING') {
-              c++;
-              if (c < 10) {
-                setTimeout(get_result, 500);
-              };
-              return;
-            };
-            $('#response').html(data.result)
-            return
-          }
-        });
-      };
-
-      get_result();
-    </script>
+    Upload progress for {{table}}: <span id="response">Pending...</span>
+    <div id="details"></div>
   </body>
 </html>
 

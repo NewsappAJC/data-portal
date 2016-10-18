@@ -6,7 +6,7 @@ import time
 
 # Django imports
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.conf import settings
@@ -55,6 +55,7 @@ def upload_file(request):
             # Accepts args in the following order: (db_name, table_name, path, delimiter=',')
             task = load_infile.delay(db_name, table_name, path, delimiter)
             request.session['id'] = task.id
+            request.session['table'] = table_name
 
             return redirect('/results/')
 
@@ -69,11 +70,13 @@ def check_task_status(request):
     p_id = request.session['id']
     response = AsyncResult(p_id)
     data = {
-        'status': response.status, 
+        'status': response.status,
         'result': response.result
     }
-    serialized = json.dumps(data)
-    return HttpResponse(serialized)
+    return JsonResponse(data)
+
+def results(request):
+    return render(request, 'results.html', {'table': request.session['table']})
 
 #------------------------------------#
 # Log a user out
