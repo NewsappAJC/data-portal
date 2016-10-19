@@ -1,6 +1,6 @@
 from django.shortcuts import render
 #from .forms import DataForm
-from utils import warehouse_search
+from .utils import warehouse_search
 
 from sqlalchemy import create_engine
 import os

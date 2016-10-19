@@ -15,7 +15,9 @@ def warehouse_search(name_query,connection):
     for table in name_tables_to_search:
         name_result = {'database_table' : table['database_table'], 'search_columns' : table['search_columns']}
         name_result['matching_records'] = connection.execute('select * from '+ name_result['database_table'] +' where MATCH(' + name_result['search_columns'] +') AGAINST("'+name_query+'" IN BOOLEAN MODE)').fetchall()
-        name_results.append(name_result)
+        
+        if len(name_result['matching_records'])>0:
+            name_results.append(name_result)
 
     return name_results
 
