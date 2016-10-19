@@ -27,7 +27,7 @@ function checkResponseStatus(res) {
     }
     else if (res.status === 'SUCCESS') {
       $('#progress-bar').css('width', '100%')
-      $('#response').html('SUCCESS');
+      $('#current-state').html('<span class="label label-success">SUCCESS</span>');
       $('#response').css('color', 'green');
       generateTable(res.result);
       return;
@@ -37,29 +37,36 @@ function checkResponseStatus(res) {
       return 'incomplete'
     }
     else {
-      $('#response').html('FAILURE');
+      $('#current-state').html('<span class="label label-danger">FAILURE</span>');
       $('#details').html(res.result)
       return;
     }
 }
 
 function generateTable(data) {
-  var rows = data.map(function(row, i) {
+  var rowData = data.slice(1)
+  var headerData = data[0]
+
+  var headers = headerData.map(function(header, i) {
+      return `<th>${header}</th>`
+  });
+
+  var rows = rowData.map(function(row, i) {
     var cells = row.map(function(cell) {
-      if (i === 0) {
-        return `<th>${cell}</th>`
-      }
-      else {
         return `<td>${cell}</td>`
-      };
     });
 
     return `<tr>${cells.join('')}</tr>`
   });
 
   var markup = `
-    <table>
-      ${rows.join('')}
+    <table class="table table-striped">
+      <thead>
+        <tr>${headers.join('')}</tr>
+      </thead>
+      <tbody>
+        ${rows.join('')}
+      </tbody>
     </table>
   `;
 

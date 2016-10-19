@@ -9,8 +9,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'data_import_tool.settings')
 
 from django.conf import settings
 
-app = Celery('data_import_tool', broker=os.environ.get('REDIS_URL'), backend=os.environ.get('REDIS_URL'))
-
+app = Celery('data_import_tool')
+app.config_from_object('django.conf:settings')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 @app.task(bind=True)

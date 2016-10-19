@@ -41,8 +41,6 @@ def upload_file(request):
     if request.method == 'POST':
         if form.is_valid():
             # Assign form values to variables
-            delimiter = form.cleaned_data['delimiter']
-            db_name = form.cleaned_data['db_name']
             table_name = form.cleaned_data['table_name']
             path = '/tmp/{}.csv'.format(table_name)
 
@@ -51,25 +49,43 @@ def upload_file(request):
                 for chunk in request.FILES['data_file'].chunks():
                     f.write(chunk)
 
-            # Begin load data infile query as a separate task so it doesn't slow response
-            # load_infile accepts args in the following order: (db_name, table_name, path, delimiter=',')
-            task = load_infile.delay(db_name, table_name, path, delimiter)
-
-            # Add the id of the process to the session so we can poll it and check if it's completed.
-            request.session['id'] = task.id
-            request.session['table'] = table_name
-
-            # Get the column datatypes automatically inferred by csvkit for user to check
-            headers = get_column_types(path)
-            context = {
-                'headers': headers,
-                'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
-                'datatypes': Column.MYSQL_TYPE_CHOICES
+            request.session['table_params'] = {
+                'path': path,
+                'delimiter': form.cleaned_data['delimiter'],
+                'db_name': form.cleaned_data['db_name'],
+                'table_name': table_name
             }
 
-            return render(request, 'categorize.html', context)
+            return redirect('/categorize/')
 
-    return render(request, 'upload.html', {'form': form})
+    # If request method isn't POST or if the form data is invalid
+    return render(request, 'file-select.html', {'form': form})
+
+#------------------------------------#
+# Prompt the user to select categories
+# for each column in the data, then
+# begin upload task
+#------------------------------------#
+def categorize(request):
+    # Begin load data infile query as a separate task so it doesn't slow response
+    # load_infile accepts args in the following order: 
+    # (db_name, table_name, path, delimiter=',')
+    if request.method == 'POST':
+        params = request.session['table_params']
+        task = load_infile.delay(**params)
+        request.session['id'] = task.id # Use the id to poll Redis for task status
+        return redirect('/upload/')
+
+    # Infer column datatypes
+    path = request.session['table_params']['path']
+    headers = get_column_types(path)
+    context = {
+        'headers': headers,
+        'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+        'datatypes': Column.MYSQL_TYPE_CHOICES
+    }
+    return render(request, 'categorize.html', context)
+
 
 #------------------------------------#
 # Poll to check the completion status of celery 
@@ -85,8 +101,8 @@ def check_task_status(request):
     }
     return JsonResponse(data)
 
-def results(request):
-    return render(request, 'results.html', {'table': request.session['table']})
+def upload(request):
+    return render(request, 'upload.html', {'table': request.session['table_params']['table_name']})
 
 #------------------------------------#
 # Log a user out

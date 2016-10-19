@@ -7,12 +7,18 @@
       integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
       crossorigin="anonymous"></script>
     <script src="{% static "js/vendor/bootstrap.min.js"%}"></script>
-    <script src="{% static "js/results.js"%}"></script>
     <link rel="stylesheet" type="text/css" href="{% static "css/vendor/bootstrap.min.css" %}"/>
     <link rel="stylesheet" type="text/css" href="{% static "css/style.css" %}"/>
+    {% block resources %}{% endblock %}
   </head>
   </head>
   <body>
-    {% block content %}{% endblock %}
+    <div class="main">
+      <h1>
+        Data Upload 
+        <a href="/logout/"><button class="btn btn-warning">Log out</button></a>
+      </h1>
+      {% block content %}{% endblock %}
+    </div>
   </body>
 </html>

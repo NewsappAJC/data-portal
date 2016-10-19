@@ -4,7 +4,6 @@ import os
 import csv
 import redis
 import time
-import pdb
 from datetime import date
 import subprocess
 import random
@@ -13,6 +12,7 @@ import random
 import sqlalchemy
 from sqlalchemy.engine.url import make_url
 from celery import shared_task
+from celery.contrib import rdb
 import boto3
 
 # Local module imports
@@ -28,7 +28,7 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 # to load the csv into it
 #---------------------------------------
 @shared_task(bind=True)
-def load_infile(self, db_name, table_name, path, delimiter=','):
+def load_infile(self, path, delimiter, db_name, table_name):
     step = 0
 
     # Create a connection to the data warehouse 

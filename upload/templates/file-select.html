@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="upload-form-holder">
+  <form enctype="multipart/form-data" action="/" method="post">
+    {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label>{{ field.label }}</label>
+        {{field}}
+            {% for error in field.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary data-submit">Submit</button>
+  </form>
+</div><!--form-holder-->
+
+{% if messages %}
+<div class="messages">
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

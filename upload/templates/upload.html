@@ -1,32 +1,19 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block resources %}
+    <script src="{% static "js/results.js"%}"></script>
+{% endblock %}
 
 {% block content %}
-<a href='/logout/'>Log out</a>
-
-<h2 style="text-align:center;">AJC Data Upload</h2>
-
-<div class="upload-form-holder">
-  <form enctype="multipart/form-data" action="/" method="post">
-    {% csrf_token %}
-      {% for field in form %}
-      <div class="form-group">
-        <label>{{ field.label }}</label>
-        {{field}}
-            {% for error in field.errors %}
-              <span class="error">{{ error }}</span>
-            {% endfor %}
-        </div>
-      {% endfor %}
-      <button type="submit" class="btn btn-primary data-submit">Submit</button>
-  </form>
-</div><!--form-holder-->
-
-{% if messages %}
-<div class="messages">
-  {% for message in messages %}
-    <p>{{ message }}</p>
-  {% endfor %}
-</div>
-{% endif %}
-
+  <h3 class="progress-holder">Upload progress for {{table}}
+    <span id="current-state">
+      <span class="label label-info">PENDING</span>
+    </span>
+  </h3>
+    <div class="progress">
+      <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped" style="min-width: 2em" role='progressbar'></div>
+    </div>
+  <div id="details"></div>
 {% endblock %}
+
