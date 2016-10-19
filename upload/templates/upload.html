@@ -1,74 +1,32 @@
-<!DOCTYPE html>
-<html>
-  <head>
-  <style>
-    html, body {
-      height: 100%;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .upload-form {
-      position: relative;
-      width: 700px;
-      padding: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 2px solid black;
-      top: 50px;
-    }
-    table.form-fields {
-      position: relative;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    .file-submit {
-      position: relative;
-      left: 50%;
-      transform: translateX(-50%);
-      margin-top: 10px;
-    }
-    .messages {
-      text-align: center;
-      color: red;
-    }
-    .label {
-      text-align: right;
-    }
-    .error {
-      color: red;
-      font-size: 12px;
-    }
-  </style>
-  </head>
-  <body>
-    <a href='/logout/'>Log out</a>
-    <div class="upload-form">
-      <h2 style="text-align:center;">AJC Data Upload</h2>
-      <form enctype="multipart/form-data" action="/" method="post">
-        {% csrf_token %}
-        <table class="form-fields">
-          {% for field in form %}
-          <tr>
-              <td class="label">
-                {{ field.label }}
-              </td>
-              <td>{{ field }}
-                {% for error in field.errors %}
-                  <span class="error">{{ error }}</span>
-                {% endfor %}
-              </td>
-          </tr>
-          {% endfor %}
-        </table>
-        <input type="submit" value="Upload" class="file-submit"/>
-      </form>
-      {% if messages %}
-      <div class="messages">
-        {% for message in messages %}
-          <p>{{ message }}</p>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<a href='/logout/'>Log out</a>
+
+<h2 style="text-align:center;">AJC Data Upload</h2>
+
+<div class="upload-form-holder">
+  <form enctype="multipart/form-data" action="/" method="post">
+    {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label>{{ field.label }}</label>
+        {{field}}
+            {% for error in field.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary data-submit">Submit</button>
+  </form>
+</div><!--form-holder-->
+
+{% if messages %}
+<div class="messages">
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

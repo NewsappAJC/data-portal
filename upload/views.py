@@ -17,6 +17,8 @@ from celery.result import AsyncResult
 
 # Local imports
 from .forms import DataForm
+from .models import Column
+from .utils import get_column_types
 # Have to do an absolute import here for celery. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile
@@ -57,13 +59,21 @@ def upload_file(request):
             request.session['id'] = task.id
             request.session['table'] = table_name
 
-            return redirect('/results/')
+            # Get the column datatypes automatically inferred by csvkit for user to check
+            headers = get_column_types(path)
+            context = {
+                'headers': headers,
+                'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+                'datatypes': Column.MYSQL_TYPE_CHOICES
+            }
+
+            return render(request, 'categorize.html', context)
 
     return render(request, 'upload.html', {'form': form})
 
 #------------------------------------#
 # Poll to check the completion status of celery 
-# task. If task is succeeded, return a sample of the
+# task. If task has succeeded, return a sample of the
 # data. If failed, return error message
 #------------------------------------#
 def check_task_status(request):

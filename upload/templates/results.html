@@ -1,21 +1,11 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.1/es6-shim.min.js"></script>
-    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
-      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-      crossorigin="anonymous"></script>
-    <script src="{% static "js/results.js"%}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static "css/style.css" %}"
-  </head>
-  <body>
+{% extends 'base.html' %}
+
+{% block content %}
     <h2>Waiting for a response</h2>
     Upload progress for {{table}}: <span id="response">Pending...</span>
     <div class="progress-holder">
       <div id='progress-bar'></div>
     </div>
     <div id="details"></div>
-  </body>
-</html>
+{% endblock %}
 

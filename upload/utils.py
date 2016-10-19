@@ -41,7 +41,7 @@ def get_column_types(filepath):
             length = None
 
         headers.append({
-            'name': column.name, 
+            'name': str(column.name), 
             'datatype': clean_type,
             'length': length,
             'raw_type': raw_type

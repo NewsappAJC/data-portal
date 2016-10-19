@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>Mark column categories. This will make searching easier.</h3>
+<form action="/upload">
+
+  {% for header in headers %}
+    <div class="form-group">
+      <label>{{ header.name }} category</label>
+      <select class="form-control">
+        {% for cat in ajc_categories %}
+          <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  {% endfor %}
+
+  <button type="submit" class="btn btn-primary data-submit">Submit</button>
+</form>
+
+{% endblock %}

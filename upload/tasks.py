@@ -29,10 +29,15 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 #---------------------------------------
 @shared_task(bind=True)
 def load_infile(self, db_name, table_name, path, delimiter=','):
-    redis_pub = redis.StrictRedis()
+    step = 0
+
     # Create a connection to the data warehouse 
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
+
+    # Keep track of progress
+    step += 1
+    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
 
     # Check if a database with the given name exists. If it doesn't, create one.
     connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
@@ -50,9 +55,10 @@ def load_infile(self, db_name, table_name, path, delimiter=','):
         'delimiter': delimiter
     }
 
-    self.update_state(state='PROGRESS', meta={'current': 1, 'total': 3})
-    # Mock create table query for testing, Jeff's util function for generating the 
-    # statement will go here.
+    # Keep track of progress
+    step += 1
+    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+
     # TODO change line endings to accept \r\n as well, if necessary
     query = r"""
         CREATE TABLE {table} ({columns});
@@ -63,7 +69,9 @@ def load_infile(self, db_name, table_name, path, delimiter=','):
 
     ## Create the table and load in the data
     connection.execute(query)
-    self.update_state(state='PROGRESS', meta={'current': 2, 'total': 3})
+
+    step += 1
+    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
@@ -74,6 +82,8 @@ def load_infile(self, db_name, table_name, path, delimiter=','):
     dataf.append([x for x in data.keys()])
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
-    self.update_state(state='PROGRESS', meta={'current': 3, 'total': 3})
+    step += 1
+    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+
     return dataf
 
