@@ -1,15 +1,18 @@
+{% extends "base.html" %}
+
+{% block search %}
 <h3>Search for a name in the warehouse</h3>
 
 <hr/>
 
-<form method="POST" class="form-horizontal" action="/results/">
+<form method="POST" class="form-horizontal" action="/search/">
 {% csrf_token %}
 
 	<div class="form-group">
 		<div class="row">
 		    <label for="name_query" class="col-sm-2 control-label">Enter a name:</label>
 		    <div class="col-sm-10">
-		      <input type="text" class="form-control" name="document_text">
+		      <input type="text" class="form-control" name="name_query">
 		    </div>
 		</div>
 <!--		<div class="row">
@@ -76,3 +79,5 @@
 
 
 </form>
+
+{% endblock %}
