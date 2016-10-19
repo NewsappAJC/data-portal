@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     # Third party apps
     'django_extensions',
     # Local apps
-    'upload'
+    'upload',
+    'search'
 ]
 
 MIDDLEWARE = [
