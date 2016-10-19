@@ -50,10 +50,10 @@ def upload_file(request):
                     f.write(chunk)
 
             # Begin load data infile query as a separate task so it doesn't slow response
-            # Add the id of the process to the session so we can poll it and check if it's 
-            # successful
-            # Accepts args in the following order: (db_name, table_name, path, delimiter=',')
+            # load_infile accepts args in the following order: (db_name, table_name, path, delimiter=',')
             task = load_infile.delay(db_name, table_name, path, delimiter)
+
+            # Add the id of the process to the session so we can poll it and check if it's completed.
             request.session['id'] = task.id
             request.session['table'] = table_name
 

@@ -1,3 +1,4 @@
+// DOM refs
 var c = 0;
 
 function getResult(cb) {
@@ -6,8 +7,9 @@ function getResult(cb) {
     url: '/check-status/',
     success: function(res) {
       c++;
-      if (cb(res) == 'PENDING') {
-        if (c < 10) {
+      if (cb(res) == 'incomplete') {
+        if (c < 50) {
+          console.log('trying...')
           setTimeout(getResult(checkResponseStatus), 500)
         }
       }
@@ -21,13 +23,18 @@ function getResult(cb) {
 function checkResponseStatus(res) {
     console.log(res)
     if (res.status == 'PENDING') {
-      return 'PENDING';
+      return 'incomplete';
     }
     else if (res.status === 'SUCCESS') {
+      $('#progress-bar').css('width', '100%')
       $('#response').html('SUCCESS');
       $('#response').css('color', 'green');
       generateTable(res.result);
       return;
+    }
+    else if (res.status === 'PROGRESS') {
+      $('#progress-bar').css('width', (100 * res.result.current / res.result.total) + '%')
+      return 'incomplete'
     }
     else {
       $('#response').html('FAILURE');

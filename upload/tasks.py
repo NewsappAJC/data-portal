@@ -2,7 +2,8 @@
 from __future__ import absolute_import
 import os
 import csv
-from time import time
+import redis
+import time
 import pdb
 from datetime import date
 import subprocess
@@ -26,8 +27,9 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 # and executes a LOAD DATA INFILE query
 # to load the csv into it
 #---------------------------------------
-@shared_task
-def load_infile(db_name, table_name, path, delimiter=','):
+@shared_task(bind=True)
+def load_infile(self, db_name, table_name, path, delimiter=','):
+    redis_pub = redis.StrictRedis()
     # Create a connection to the data warehouse 
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
@@ -48,6 +50,7 @@ def load_infile(db_name, table_name, path, delimiter=','):
         'delimiter': delimiter
     }
 
+    self.update_state(state='PROGRESS', meta={'current': 1, 'total': 3})
     # Mock create table query for testing, Jeff's util function for generating the 
     # statement will go here.
     # TODO change line endings to accept \r\n as well, if necessary
@@ -60,6 +63,7 @@ def load_infile(db_name, table_name, path, delimiter=','):
 
     ## Create the table and load in the data
     connection.execute(query)
+    self.update_state(state='PROGRESS', meta={'current': 2, 'total': 3})
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
@@ -67,9 +71,9 @@ def load_infile(db_name, table_name, path, delimiter=','):
     data = connection.execute('SELECT * FROM {db}.{table}'.format(**sql_args))
 
     dataf = []
-    print data.keys()
     dataf.append([x for x in data.keys()])
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
+    self.update_state(state='PROGRESS', meta={'current': 3, 'total': 3})
     return dataf
 
