@@ -1,0 +1,28 @@
+table {
+  margin-top: 20px;
+}
+
+th {
+  text-align: left;
+}
+
+td {
+  width: 60px;
+}
+
+.progress-holder {
+  width: 400px;
+  height: 20px;
+  border: 1px solid black;
+  position: relative;
+}
+
+#progress-bar {
+  width: 0;
+  height: 20px;
+  background-color: blue;
+  position:absolute;
+  top: 0;
+  left: 0;
+  transition: width 0.3s ease;
+}
