@@ -74,7 +74,7 @@ class Contacts(models.Model):
 class Column(models.Model):
     table = models.ForeignKey(Table)
     
-    name = models.CharField(
+    column = models.CharField(
         max_length=300,
         blank=False,
         null=False
@@ -102,20 +102,26 @@ class Column(models.Model):
         null=False
     )
     
+    column_size = models.CharField(
+        max_length=10,
+        null=True
+    )
+    
     INFORMATION_TYPE_CHOICES = (
         ("full_name","Full Name"),
         ("last_name","Last Name"),
         ("first name","First Name"),
         ("middle_name","Middle Name"),
         ("other_name","Other Name"),
-        ("full_address","Full Address"),
-        ("street","Street"),
-        ("city","City"),
-        ("county","County"),
-        ("state","State"),
-        ("zip","ZIP"),
+        ("full_add","Full Address"),
+        ("street_add","Street"),
+        ("city_add","City"),
+        ("county_add","County"),
+        ("state_add","State"),
+        ("zip_add","ZIP"),
         ("other_add","Other Address"),
         ("organization_name","Organization Name"),
+        ("corp_or_person_name","Corporate or Person Name")
     ) 
     
     information_type = models.CharField(

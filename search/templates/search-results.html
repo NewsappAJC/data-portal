@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+
+{% block search %}
+{% include "search.html" %}
+{% endblock %}
+
+
+
+{% block results %}
+<h3>Results</h3> 
+{% for result in  results%}
+<div class="results">
+    <h4>Found [TK record count] records in {{ result.database_table }}</h4>
+</div>
+{% endfor %}
+
+{% endblock %}

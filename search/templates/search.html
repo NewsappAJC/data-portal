@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block search %}
+<h3>Search for a name in the warehouse</h3>
+
+<hr/>
+
+<form method="POST" class="form-horizontal" action="/search/">
+{% csrf_token %}
+
+	<div class="form-group">
+		<div class="row">
+		    <label for="name_query" class="col-sm-2 control-label">Enter a name:</label>
+		    <div class="col-sm-10">
+		      <input type="text" class="form-control" name="name_query">
+		    </div>
+		</div>
+<!--		<div class="row">
+		    <label for="physician_name" class="col-sm-2 control-label">Physician name</label>
+		    <div class="col-sm-10">
+		      <input type="text" class="form-control" name="physician_name">
+		    </div>
+
+		</div>
+
+		<div class="row">
+			<div class="col-sm-6">
+				<div class="row">
+			    	<label for="min_sexual_allegation_forecast" class="col-sm-4 control-label">Minimum sexual forecast</label>
+			    	<div class="col-sm-8">
+			      		<input type="number" class="form-control" name="min_sexual_allegation_forecast" >
+			    	</div>
+			    </div>
+			    <div class="row">
+			    	<label for="max_sexual_allegation_forecast" class="col-sm-4 control-label">Maximum sexual forecast</label>
+			    	<div class="col-sm-8">
+			      		<input type="number" class="form-control" name="max_sexual_allegation_forecast" >
+			    	</div>
+		    	</div>
+		    </div>
+
+			<div class="col-sm-offset-1 col-sm-3">
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" name="sexual_allegation" value="sexual_allegation">
+				   Contains sexual allegation
+				  </label>
+				</div>
+
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" name="good_to_report" value="good_to_report">
+				   Marked good to report
+				  </label>
+				</div>
+
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" name="post_1999" value="post_1999" >
+				   	Restrict results to post-1999
+				  </label>
+				</div>
+
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" name="reciprocals" value="exclude_reciprocals" >
+				   	Exclude reciprocals
+				  </label>
+				</div>
+
+			</div>
+-->
+			<div class="col-sm-2">
+				<button class="btn btn-success" type="submit">Search</button>
+			</div>
+		</div>
+	</div>
+
+
+
+</form>
+
+{% endblock %}
