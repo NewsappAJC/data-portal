@@ -54,9 +54,9 @@ function checkResponseStatus(res) {
     }
 }
 
-function generateTable(data) {
-  var rowData = data.slice(1)
-  var headerData = data[0]
+function generateTable(res) {
+  var rowData = res.data.slice(1)
+  var headerData = res.data[0]
 
   var headers = headerData.map(function(header, i) {
       return `<th>${header}</th>`

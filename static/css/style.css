@@ -19,3 +19,12 @@ button.logout {
 .sql-error {
   padding: 10px;
 }
+
+.message {
+  position: relative;
+  width: 300px;
+  padding: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 10px;
+}

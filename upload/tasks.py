@@ -91,5 +91,5 @@ def load_infile(self, path, delimiter, db_name, table_name):
     step += 1
     self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
 
-    return dataf
+    return {'error': False, 'data': dataf}
 

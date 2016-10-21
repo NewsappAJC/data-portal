@@ -108,6 +108,7 @@ def check_task_status(request):
             user=request.user,
             source=params['source']
         )
+        t.save()
 
         # Create column objects for each column in the headers list
         for header in request.session['headers']:
@@ -118,7 +119,6 @@ def check_task_status(request):
                 column_size=header['length']
             )
 
-        t.save()
         c.save()
 
     try:
