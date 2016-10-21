@@ -70,7 +70,6 @@ def load_infile(self, path, delimiter, db_name, table_name):
         """.format(**sql_args)
 
     # Catch any operational errors and send the text of the error to the user
-    rdb.set_trace()
     try:
         connection.execute(query)
     except exc.SQLAlchemyError as e:
