@@ -1,4 +1,4 @@
-// DOM refs
+// Constants
 var c = 0;
 
 function getResult(cb) {
@@ -23,29 +23,37 @@ function getResult(cb) {
 function checkResponseStatus(res) {
     console.log(res)
     if (res.status == 'PENDING') {
-      return 'incomplete';
+      $('#progress-bar').css('width', (100 * res.result.current / res.result.total) + '%')
+      return 'incomplete'
     }
     else if (res.status === 'SUCCESS') {
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
-        $('#error').html(`
-          <div class="bg-danger sql-error">
+        $('#message').html(`
+          <div class="alert alert-danger sql-error">
             <p>There was an error uploading to the database: </p>
             <p>
               ${res.result.errorMessage}
             </p>
-          </div>`)
+            <p>
+              <a href="/" class="alert-link">Go back to the upload form</a>
+            </p>
+          </div>
+        `)
         return
       }
 
       $('#progress-bar').css('width', '100%');
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
+      $('#message').html(`
+        <div class="alert alert-success">
+          <p>
+            <a href="/" class="alert-link">Go back to the upload form</a>
+          </p>
+        </div>
+      `)
       generateTable(res.result);
       return;
-    }
-    else if (res.status === 'PROGRESS') {
-      $('#progress-bar').css('width', (100 * res.result.current / res.result.total) + '%')
-      return 'incomplete'
     }
     else {
       $('#current-state').html('<span class="label label-danger">FAILURE</span>');

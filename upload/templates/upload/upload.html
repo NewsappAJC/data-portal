@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-  <a href="/logout/"><button class="btn btn-danger logout">Log out</button></a>
+  <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
   <h3 class="progress-holder">Upload progress for {{table}}
     <span id="current-state">
       <span class="label label-info">PENDING</span>
@@ -16,6 +16,6 @@
       <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped" style="min-width: 2em" role='progressbar'></div>
     </div>
   <div id="details"></div>
-  <div id="error"></div>
+  <div id="message"></div>
 {% endblock %}
 

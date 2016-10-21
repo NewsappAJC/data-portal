@@ -27,7 +27,7 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 #---------------------------------------
 # A celery task that accesses a dataabse
 # and executes a LOAD DATA INFILE query
-# to load the csv into it
+# to load the csv into it.
 #---------------------------------------
 @shared_task(bind=True)
 def load_infile(self, path, delimiter, db_name, table_name):
@@ -39,7 +39,7 @@ def load_infile(self, path, delimiter, db_name, table_name):
 
     # Keep track of progress
     step += 1
-    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
+    self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
     # Check if a database with the given name exists. If it doesn't, create one.
     connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
@@ -57,12 +57,12 @@ def load_infile(self, path, delimiter, db_name, table_name):
         'delimiter': delimiter
     }
 
-    # Keep track of progress
+    # Keep track of PENDING
     step += 1
-    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
+    self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
     # TODO change line endings to accept \r\n as well, if necessary
-    query = r"""
+    query = """
         CREATE TABLE {table} ({columns});
         LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
         FIELDS TERMINATED BY "{delimiter}" LINES TERMINATED BY "\n"
@@ -70,14 +70,15 @@ def load_infile(self, path, delimiter, db_name, table_name):
         """.format(**sql_args)
 
     # Catch any operational errors and send the text of the error to the user
+    rdb.set_trace()
     try:
         connection.execute(query)
     except exc.SQLAlchemyError as e:
         r = re.compile(r'\(.+?\)')
-        return {'error': True, 'errorMessage': r.findall(str(e))[1]}
+        return {'error': True, 'errorMessage': r.findall(str(e))[1]} # Get the summary of the error
 
     step += 1
-    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
+    self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
@@ -89,7 +90,7 @@ def load_infile(self, path, delimiter, db_name, table_name):
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
     step += 1
-    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
+    self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
     return {'error': False, 'data': dataf}
 
