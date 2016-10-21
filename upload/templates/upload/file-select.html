@@ -1,6 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'upload/base.html' %}
 
 {% block content %}
+<a href="/logout/"><button class="btn btn-danger logout">Log out</button></a>
 <div class="upload-form-holder">
   <form enctype="multipart/form-data" action="/" method="post">
     {% csrf_token %}

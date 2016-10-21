@@ -4,3 +4,18 @@
   left: 50%;
   transform: translateX(-50%);
 }
+
+button.logout {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.cat-examples {
+  display: inline-block;
+  color: #999999;
+}
+
+.sql-error {
+  padding: 10px;
+}

@@ -4,7 +4,7 @@ var c = 0;
 function getResult(cb) {
   $.ajax({
     type: 'GET', 
-    url: '/check-status/',
+    url: '/check-task-status/',
     success: function(res) {
       c++;
       if (cb(res) == 'incomplete') {
@@ -26,9 +26,20 @@ function checkResponseStatus(res) {
       return 'incomplete';
     }
     else if (res.status === 'SUCCESS') {
-      $('#progress-bar').css('width', '100%')
+      if (res.result.error) {
+        $('#current-state').html('<span class="label label-danger">FAILURE</span>');
+        $('#error').html(`
+          <div class="bg-danger sql-error">
+            <p>There was an error uploading to the database: </p>
+            <p>
+              ${res.result.errorMessage}
+            </p>
+          </div>`)
+        return
+      }
+
+      $('#progress-bar').css('width', '100%');
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
-      $('#response').css('color', 'green');
       generateTable(res.result);
       return;
     }

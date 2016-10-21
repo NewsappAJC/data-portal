@@ -1,6 +1,7 @@
 # Standard library imports
 from __future__ import absolute_import
 import os
+import re
 import csv
 import redis
 import time
@@ -10,6 +11,7 @@ import random
 
 # Third party imports
 import sqlalchemy
+from sqlalchemy import exc # error handling
 from sqlalchemy.engine.url import make_url
 from celery import shared_task
 from celery.contrib import rdb
@@ -37,7 +39,7 @@ def load_infile(self, path, delimiter, db_name, table_name):
 
     # Keep track of progress
     step += 1
-    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
 
     # Check if a database with the given name exists. If it doesn't, create one.
     connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
@@ -57,7 +59,7 @@ def load_infile(self, path, delimiter, db_name, table_name):
 
     # Keep track of progress
     step += 1
-    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
 
     # TODO change line endings to accept \r\n as well, if necessary
     query = r"""
@@ -67,11 +69,15 @@ def load_infile(self, path, delimiter, db_name, table_name):
         IGNORE 1 LINES;
         """.format(**sql_args)
 
-    ## Create the table and load in the data
-    connection.execute(query)
+    # Catch any operational errors and send the text of the error to the user
+    try:
+        connection.execute(query)
+    except exc.SQLAlchemyError as e:
+        r = re.compile(r'\(.+?\)')
+        return {'error': True, 'errorMessage': r.findall(str(e))[1]}
 
     step += 1
-    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
@@ -83,7 +89,7 @@ def load_infile(self, path, delimiter, db_name, table_name):
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
     step += 1
-    self.update_state(state='PROGRESS', meta={'current': step, 'total': 4})
+    self.update_state(state='PROGRESS', meta={'error': False, 'current': step, 'total': 4})
 
     return dataf
 

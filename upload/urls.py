@@ -6,9 +6,9 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.upload_file),
-    url(r'^check-status', views.check_task_status),
-    url(r'^login/$', auth_views.login),
-    url(r'^logout/$', views.logout_user),
+    url(r'^categorize/$', views.categorize),
     url(r'^upload/$', views.upload),
-    url(r'^categorize/$', views.categorize)
+    url(r'^check-task-status/$', views.check_task_status),
+    url(r'^login/$', auth_views.login),
+    url(r'^logout/$', views.logout_user)
 ]

@@ -1,6 +1,7 @@
 # Python standard lib imports
 import re
 import pdb # for debugging
+from collections import defaultdict
 
 # Third party imports
 from csvkit import sql, table
@@ -23,9 +24,9 @@ def polish_create_table(create_table):
 def get_column_types(filepath):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
-    # TODO Do this in chunks so as not to overwhelm system memory
+    # TODO Do this in chunks so as not to ov_erwhelm system memory
     f = open(filepath,'r')
-    csv_table = table.Table.from_csv(f,name='mytable')
+    csv_table = table.Table.from_csv(f)
     sql_table = sql.make_table(csv_table)
     headers = []
 
@@ -44,8 +45,20 @@ def get_column_types(filepath):
             'name': str(column.name), 
             'datatype': clean_type,
             'length': length,
-            'raw_type': raw_type
+            'raw_type': raw_type,
+            'sample_data': []
         })
+
+    # Give the user sample data to help them categorize the different columns
+    data = csv_table.to_rows()
+
+    for row in data[:5]:
+        for i in range(len(row)):
+            ex = str(row[i])
+            headers[i]['sample_data'].append(ex)
+
+    for h in headers:
+        h['sample_data'] = (', ').join(h['sample_data'])
 
     return headers
 

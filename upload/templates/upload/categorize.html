@@ -1,15 +1,21 @@
-{% extends 'base.html' %}
+{% extends 'upload/base.html' %}
 
 {% block content %}
+<a href="/logout/"><button class="btn btn-danger logout">Log out</button></a>
 <h3>Mark column categories. This will make searching easier.</h3>
 <div class="categorize-form-holder">
-  <form action="/categorize/" method="POST">
+  <form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
     {% for header in headers %}
       <div class="form-group">
-        <label>{{ header.name }}</label>
-        <select class="form-control">
+        <label for="{{ header.name }}">{{ header.name }}</label>
+          <div class="cat-examples">
+            [
+              <span class="cat-example">{{ header.sample_data }}</span>
+            ]
+          </div>
+          <select class="form-control" name="{{ header.name }}">
           {% for cat in ajc_categories %}
             <option value="{{ cat.0 }}">{{ cat.1 }}</option>
           {% endfor %}
