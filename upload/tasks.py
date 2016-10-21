@@ -48,7 +48,8 @@ def load_infile(self, path, delimiter, db_name, table_name):
     column_types = get_column_types(path)
 
     # Convert column types back to strings for use in the create table statement
-    stypes = ['{name} {raw_type}'.format(**x) for x in column_types]
+    stypes = ['{name} {datatype}({length})'.format(**x) for x in column_types]
+    rdb.set_trace()
     sql_args = {
         'table': table_name,
         'columns': (',').join(stypes),

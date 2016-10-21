@@ -1,6 +1,6 @@
 # Python standard lib imports
 import re
-import pdb # for debugging
+import pdb # for debugging only
 from collections import defaultdict
 
 # Third party imports
@@ -31,21 +31,26 @@ def get_column_types(filepath):
     headers = []
 
     for column in sql_table.columns:
-        raw_type = str(column.type)
 
-        # Use regex to check if there's a length argument. If so, remove it
-        # from the type name, and get if from the column.type property
+        # Clean the type and name values
+        raw_type = str(column.type)
         clean_type = re.sub(r'\(\w+\)', '', raw_type)
+
+        clean_name = str(column.name)
+        rs = [(r' |_', '-'), (r'[^ -0-9a-zA-Z]+', '')]
+        for r, sub_ in rs:
+            clean_name = re.sub(r, sub_, clean_name)
+        clean_name = clean_name.upper()[:60] # MySQL allows 64 character column names max
+
         try:
             length = column.type.length
         except AttributeError:
-            length = None
+            length = ''
 
         headers.append({
-            'name': str(column.name), 
+            'name': clean_name, 
             'datatype': clean_type,
             'length': length,
-            'raw_type': raw_type,
             'sample_data': []
         })
 
