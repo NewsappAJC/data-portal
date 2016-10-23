@@ -101,7 +101,6 @@ def categorize(request):
 def check_task_status(request):
     p_id = request.session['task_id']
     response = AsyncResult(p_id)
-    print response
     data = {
         'status': response.status,
         'result': response.result

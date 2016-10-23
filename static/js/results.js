@@ -22,19 +22,15 @@ function getResult(cb) {
 
 function checkResponseStatus(res) {
     console.log(res)
-    if (res.status == 'PENDING') {
+    if (res.status == 'PROGRESS') {
       $('#progress-bar').css('width', (100 * res.result.current / res.result.total) + '%')
+      $('#progress-message').html(res.result.message)
       return 'incomplete'
     }
     else if (res.status === 'SUCCESS') {
-      if (res.result.warnings) {
-        warnings_html = res.result.warnings.map(function(w) {
-          return `<li>${w}</li>`
-        });
-        $('#warnings').html(`<ul>${warnings_html.join(' ')}</ul>`)
-      }
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
+        $('#progress-message').html('Error')
         $('#message').html(`
           <div class="alert alert-danger sql-error">
             <p>There was an error uploading to the database: </p>
@@ -58,8 +54,29 @@ function checkResponseStatus(res) {
           </p>
         </div>
       `)
+      $('#progress-message').html('Finished')
       generateTable(res.result);
+
+      if (res.result.warnings) {
+        warnings_html = res.result.warnings.map(function(w) {
+          return `<li>${w}</li>`
+        });
+        $('#warnings').html(`<ul>${warnings_html.join(' ')}</ul>`)
+        $('#progress-message').html('Finished (with warnings)')
+
+        $('#current-state').html('<span class="label label-warning">SUCCESS</span>');
+        $('#message').html(`
+          <div class="alert alert-warning">
+            <p>The upload succeeded, but there were <a href="#warnings" class="alert-link">warnings</a>.</p>
+            <p><a href="/" class="alert-link">Go back to the upload form</a></p>
+          </div>
+        `)
+      }
+
       return;
+    }
+    else if (res.status == 'PENDING') {
+      return
     }
     else {
       $('#current-state').html('<span class="label label-danger">FAILURE</span>');
