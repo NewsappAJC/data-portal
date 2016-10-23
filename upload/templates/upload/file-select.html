@@ -3,18 +3,103 @@
 {% block content %}
 <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
 <div class="upload-form-holder">
-  <form enctype="multipart/form-data" action="/" method="post">
+  <form enctype="multipart/form-data" class="form" action="/" method="post">
     {% csrf_token %}
-      {% for field in form %}
-      <div class="form-group">
-        <label>{{ field.label }}</label>
-        {{field}}
-            {% for error in field.errors %}
-              <span class="error">{{ error }}</span>
+      <div class="row">
+        <div class="col-sm-8">
+          <div class="form-group">
+            <label>{{ form.data_file.label }}</label>
+            {{form.data_file}}
+            {% for error in form.datafile.errors %}
+              <div class="error">{{ error }}</div>
             {% endfor %}
+          </div>
         </div>
-      {% endfor %}
-      <button type="submit" class="btn btn-primary data-submit">Submit</button>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.table_name.label }}</label>
+            {{form.table_name}}
+            {% for error in form.table_name.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.db_name.label }}</label>
+            {{form.db_name}}
+            {% for error in form.db_name.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.topic.label }}</label>
+            {{form.topic}}
+            {% for error in form.topic.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.reporter_name.label }}</label>
+            {{form.reporter_name}}
+            {% for error in form.reporter_name.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.source.label }}</label>
+            {{form.source}}
+            {% for error in form.source.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.press_contact.label }}</label>
+            {{form.press_contact}}
+            {% for error in form.press_contact.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.press_contact_number.label }}</label>
+            {{form.press_contact_number}}
+            {% for error in form.press_contact_number.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label>{{ form.press_contact_email.label }}</label>
+            {{form.press_contact_email}}
+            {% for error in form.press_contact_email.errors %}
+              <div class="error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      {% if form.non_field_errors %}
+        {{ form.non_field_errors }}
+      {% endif %}
+
+      <div>
+        <button type="submit" class="btn btn-primary data-submit">Submit</button>
+      </div>
   </form>
 </div><!--form-holder-->
 
