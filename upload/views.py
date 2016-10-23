@@ -115,7 +115,8 @@ def check_task_status(request):
             table=params['table_name'],
             database=params['db_name'],
             user=request.user,
-            source=params['source']
+            source=params['source'],
+            upload_log=data['result']['warnings']
         )
         t.save()
 
