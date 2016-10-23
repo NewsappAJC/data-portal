@@ -37,7 +37,9 @@ def get_column_types(filepath):
         clean_type = re.sub(r'\(\w+\)', '', raw_type)
 
         clean_name = str(column.name)
-        rs = [(r' |_', '-'), (r'[^ -0-9a-zA-Z]+', '')]
+        # Remove spaces at the beginning of the string, replace spaces and
+        # underscores with hyphens, strip all non-alphanumeric characters
+        rs = [(r'^ ', ''), (r' |_', '-'), (r'[^-0-9a-zA-Z]+', '')]
         for r, sub_ in rs:
             clean_name = re.sub(r, sub_, clean_name)
         clean_name = clean_name.upper()[:60] # MySQL allows 64 character column names max
@@ -50,6 +52,7 @@ def get_column_types(filepath):
         headers.append({
             'name': clean_name, 
             'datatype': clean_type,
+            'raw_type': raw_type,
             'length': length,
             'sample_data': []
         })

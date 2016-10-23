@@ -38,19 +38,25 @@ def upload_file(request):
     form = DataForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
-            # Assign form values to variables
             table_name = form.cleaned_data['table_name']
+            # Write the file to a path in the /tmp directory for manipulation later
             path = '/tmp/{}.csv'.format(table_name)
+            test_path = '/tmp/{}-sample.csv'.format(table_name)
 
-            # Handle uploaded file in chunks so we don't overwhelm the system's memory
-            with open(path, 'wb+') as f:
-                for chunk in request.FILES['data_file'].chunks():
+            with open(path, 'wb+') as f, open(test_path, 'w') as test_f:
+                # Handle uploaded file in chunks so we don't overwhelm the system's memory
+                for i, chunk in enumerate(request.FILES['data_file'].chunks()):
+                    # Write the first chunk to a sample file that we can use later to 
+                    # infer datatype without reading the whole file into memory
+                    if i == 0:
+                        test_f.write(chunk)
                     f.write(chunk)
 
-            # Store the table config details in session storage so that other views can
+            # Store the table config in session storage so that other views can
             # access it.
             request.session['table_params'] = {
                 'path': path,
+                'test_path': test_path,
                 'delimiter': form.cleaned_data['delimiter'],
                 'db_name': form.cleaned_data['db_name'],
                 'source': form.cleaned_data['source'],
@@ -70,9 +76,11 @@ def upload_file(request):
 @login_required
 def categorize(request):
     # Infer column datatypes
-    path = request.session['table_params']['path']
-    headers = get_column_types(path)
+    test_path = request.session['table_params']['test_path']
+    start_time = time.time()
+    headers = get_column_types(test_path)
     request.session['headers'] = headers
+    print '--- Time elapsed for get_column_types: {} seconds ---'.format(time.time() - start_time)
 
     context = {
         'headers': headers,
@@ -83,11 +91,12 @@ def categorize(request):
     return render(request, 'upload/categorize.html', context)
 
 
-#------------------------------------#
+#----------------------------------------------------#
 # Poll to check the completion status of celery 
 # task. If task has succeeded, return a sample of the
-# data. If failed, return error message
-#------------------------------------#
+# data, and write metadata about upload to Django DB. 
+# If failed, return error message.
+#----------------------------------------------------#
 @login_required
 def check_task_status(request):
     p_id = request.session['task_id']
@@ -132,7 +141,8 @@ def upload(request):
     # TODO figure out how to validate a programatically generated form
     if request.method == 'POST':
         params = request.session['table_params']
-        fparams = {key: value for key, value in params.items() if key != 'source'}
+        fparams = {key: value for key, value in params.items() if key != 'source' and key != 'test_path'}
+        fparams['columns'] = request.session['headers']
 
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status

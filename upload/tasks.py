@@ -30,7 +30,7 @@ URL = os.environ['DATA_WAREHOUSE_URL']
 # to load the csv into it.
 #---------------------------------------
 @shared_task(bind=True)
-def load_infile(self, path, delimiter, db_name, table_name):
+def load_infile(self, path, delimiter, db_name, table_name, columns):
     step = 0
 
     # Create a connection to the data warehouse 
@@ -41,21 +41,15 @@ def load_infile(self, path, delimiter, db_name, table_name):
     step += 1
     self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
-    # Check if a database with the given name exists. If it doesn't, create one.
-    connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
-    connection.execute('USE {}'.format(db_name))
-
-    column_types = get_column_types(path)
-
     # Convert column types back to strings for use in the create table statement
-    stypes = ['{name} {datatype}({length})'.format(**x) for x in column_types]
-    rdb.set_trace()
+    stypes = ['{name} {raw_type}'.format(**x) for x in columns]
     sql_args = {
         'table': table_name,
         'columns': (',').join(stypes),
         'path': path,
         'db': db_name,
-        'delimiter': delimiter
+        'delimiter': delimiter,
+        'time': time.time() # For debugging purposes only
     }
 
     # Keep track of PENDING
@@ -70,12 +64,14 @@ def load_infile(self, path, delimiter, db_name, table_name):
         IGNORE 1 LINES;
         """.format(**sql_args)
 
+    # Check if a database with the given name exists. If it doesn't, create one.
     # Catch any operational errors and send the text of the error to the user
     try:
+        connection.execute('CREATE DATABASE IF NOT EXISTS {name}; USE {name}'.format(name=db_name))
         connection.execute(query)
     except exc.SQLAlchemyError as e:
         r = re.compile(r'\(.+?\)')
-        return {'error': True, 'errorMessage': r.findall(str(e))[1]} # Get the summary of the error
+        return {'error': True, 'errorMessage': r.findall(str(e))[1]} # Return the summary of the error
 
     step += 1
     self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
