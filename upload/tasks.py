@@ -57,6 +57,7 @@ def load_infile(self, path, delimiter, db_name, table_name, columns):
     self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
     # TODO change line endings to accept \r\n as well, if necessary
+    print 'CREATE TABLE {table} ({columns})'.format(**sql_args)
     query = """
         CREATE TABLE {table} ({columns});
         LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
@@ -65,9 +66,10 @@ def load_infile(self, path, delimiter, db_name, table_name, columns):
         """.format(**sql_args)
 
     # Check if a database with the given name exists. If it doesn't, create one.
-    # Catch any operational errors and send the text of the error to the user
+    # Catch any operational errors and return the text of the error to the user
     try:
-        connection.execute('CREATE DATABASE IF NOT EXISTS {name}; USE {name}'.format(name=db_name))
+        connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
+        connection.execute('USE {}'.format(db_name))
         connection.execute(query)
     except exc.SQLAlchemyError as e:
         r = re.compile(r'\(.+?\)')

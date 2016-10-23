@@ -39,10 +39,10 @@ def get_column_types(filepath):
         clean_name = str(column.name)
         # Remove spaces at the beginning of the string, replace spaces and
         # underscores with hyphens, strip all non-alphanumeric characters
-        rs = [(r'^ ', ''), (r' |_', '-'), (r'[^-0-9a-zA-Z]+', '')]
+        rs = [(r'^ |^-|^_', ''), (r' |-', '_'), (r'[^_0-9a-zA-Z]+', '')]
         for r, sub_ in rs:
             clean_name = re.sub(r, sub_, clean_name)
-        clean_name = clean_name.upper()[:60] # MySQL allows 64 character column names max
+        clean_name = clean_name.lower()[:60] # MySQL allows 64 character column names max
 
         try:
             length = column.type.length

@@ -27,3 +27,7 @@ button.logout {
   transform: translateX(-50%);
   margin-top: 10px;
 }
+
+#details {
+  overflow-x: auto;
+}
