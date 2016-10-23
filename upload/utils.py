@@ -35,6 +35,10 @@ def get_column_types(filepath):
         # Clean the type and name values
         raw_type = str(column.type)
         clean_type = re.sub(r'\(\w+\)', '', raw_type)
+        
+        # Temporary fix for issue #19
+        if raw_type == 'BOOLEAN':
+            raw_type = 'VARCHAR(10)'
 
         clean_name = str(column.name)
         # Remove spaces at the beginning of the string, replace spaces and
@@ -48,7 +52,6 @@ def get_column_types(filepath):
             length = column.type.length
         except AttributeError:
             length = ''
-
         headers.append({
             'name': clean_name, 
             'datatype': clean_type,
