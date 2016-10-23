@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import os
 import re
 import csv
+import warnings
 import redis
 import time
 from datetime import date
@@ -65,15 +66,26 @@ def load_infile(self, path, delimiter, db_name, table_name, columns):
         IGNORE 1 LINES;
         """.format(**sql_args)
 
-    # Check if a database with the given name exists. If it doesn't, create one.
-    # Catch any operational errors and return the text of the error to the user
-    try:
-        connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
-        connection.execute('USE {}'.format(db_name))
-        connection.execute(query)
-    except exc.SQLAlchemyError as e:
-        r = re.compile(r'\(.+?\)')
-        return {'error': True, 'errorMessage': r.findall(str(e))[1]} # Return the summary of the error
+    sql_warnings = []
+
+    # Record all warnings raised by the writing to the MySQL db. SQLAlchemy doesn't
+    # always raise exceptions for data loss
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+
+        # Check if a database with the given name exists. If it doesn't, create one.
+        # If a SQL error is thrown, end the process and return a summary of the error
+        try:
+            connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
+            connection.execute('USE {}'.format(db_name))
+            connection.execute(query)
+        except exc.SQLAlchemyError as e:
+            r = re.compile(r'\(.+?\)')
+            return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
+
+        # Write warnings to a list for that will be returned to the user
+        if len(w) > 0:
+            sql_warnings = [str(warning) for warning in w]
 
     step += 1
     self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
@@ -90,5 +102,5 @@ def load_infile(self, path, delimiter, db_name, table_name, columns):
     step += 1
     self.update_state(state='PENDING', meta={'error': False, 'current': step, 'total': 4})
 
-    return {'error': False, 'data': dataf}
+    return {'error': False, 'data': dataf, 'warnings': sql_warnings}
 

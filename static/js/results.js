@@ -27,6 +27,12 @@ function checkResponseStatus(res) {
       return 'incomplete'
     }
     else if (res.status === 'SUCCESS') {
+      if (res.result.warnings) {
+        warnings_html = res.result.warnings.map(function(w) {
+          return `<li>${w}</li>`
+        });
+        $('#warnings').html(`<ul>${warnings_html.join(' ')}</ul>`)
+      }
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
         $('#message').html(`
