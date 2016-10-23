@@ -156,6 +156,8 @@ def upload(request):
 
         return render(request, 'upload/upload.html', {'table': request.session['table_params']['table_name']})
 
+    return redirect('/')
+
 #------------------------------------#
 # Log a user out
 #------------------------------------#

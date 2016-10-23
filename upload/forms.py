@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.forms import widgets
 
@@ -23,7 +25,7 @@ class DataForm(forms.Form):
     data_file = forms.FileField(label='File')
     delimiter = forms.ChoiceField(label='Delimiter', choices=DELIMITERS, initial=',')
     db_name = forms.CharField(label='Database name', max_length=100, initial='user_cox')
-    table_name = forms.CharField(label='Table name', max_length=100, initial='test')
+    table_name = forms.SlugField(label='Table name', max_length=100, initial='test')
     source = forms.CharField(label='Source', max_length=100, initial='God')
     #topic = forms.CharField(label='Topic', max_length=100, initial='test')
     #reporter_name = forms.ChoiceField(label='Reporter who aquired data', choices=REPORTERS, initial='Jonathan Cox')
