@@ -24,7 +24,7 @@ from .utils import get_column_types
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ['DATA_WAREHOUSE_URL']
-TOTAL_STEPS = 6
+TOTAL_STEPS = 7
 
 #---------------------------------------
 # Helper functions
@@ -50,6 +50,9 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
     # Create a connection to the data warehouse 
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
+
+    step = forward(self, step, 'Inferring datatype of columns. This can take a while')
+    columns = get_column_types(path, columns)
 
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columns]

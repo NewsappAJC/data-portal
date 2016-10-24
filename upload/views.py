@@ -19,7 +19,7 @@ from celery.result import AsyncResult
 # Local imports
 from .forms import DataForm
 from .models import Column, Table, Contact
-from .utils import get_column_types
+from .utils import get_column_types, get_column_names
 # Have to do an absolute import here for celery. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile
@@ -58,12 +58,13 @@ def upload_file(request):
 
             # Store the table config in session storage so that other views can
             # access it.
+            db_name = form.cleaned_data['db_input'] or form.cleaned_data['db_select']
             request.session['table_params'] = {
                 'path': path,
                 'test_path': test_path,
                 #'delimiter': form.cleaned_data['delimiter'],
                 'topic': form.cleaned_data['topic'],
-                'db_name': form.cleaned_data['db_name'],
+                'db_name': db_name,
                 'source': form.cleaned_data['source'],
                 'table_name': table_name
             }
@@ -83,9 +84,9 @@ def categorize(request):
     # Infer column datatypes
     test_path = request.session['table_params']['test_path']
     start_time = time.time()
-    headers = get_column_types(test_path)
+    headers = get_column_names(test_path)
     request.session['headers'] = headers
-    print '--- Time elapsed for get_column_types: {} seconds ---'.format(time.time() - start_time)
+
     context = {
         'headers': headers,
         'ajc_categories': Column.INFORMATION_TYPE_CHOICES,

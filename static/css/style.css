@@ -40,3 +40,18 @@ button.logout {
 .short {
   width: 250px;
 }
+
+.sidebar {
+  background-color: #FAFAFA;
+}
+
+.or {
+  position: relative;
+  text-align: center;
+  transform: translateY(50%);
+}
+
+.db_holder {
+  position: relative;
+}
+

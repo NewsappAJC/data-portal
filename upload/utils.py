@@ -3,6 +3,9 @@ import re
 import pdb # for debugging only
 from collections import defaultdict
 
+# Django imports
+from django.conf import settings
+
 # Third party imports
 from csvkit import sql, table
 
@@ -16,20 +19,81 @@ def polish_create_table(create_table):
     
     return create_table
 
+
+#--------------------------------------------
+# Helper functions
+#--------------------------------------------
+def clean(names):
+    preexisting = [] # Will keep track of duplicate column names
+    clean_names = [] # Will hold all our column names
+    for name in names:
+        # Append a number to a column if that column name already exists in the table
+        if name in preexisting:
+            preexisting.append(name)
+            c = preexisting.count(name) - 1
+            name += str(c)
+
+        # Use regex to remove spaces at the beginning of the string, replace spaces and
+        # underscores with hyphens, remove line breaks, strip all non-alphanumeric 
+        # characters
+        r = re.compile(r'\s')
+        clean_name = re.sub(r, '_', name.strip())
+
+        # MySQL allows 64 character column names max
+        clean_names.append(clean_name.lower()[:60])
+
+    return clean_names
+
+#--------------------------------------------
+# End helper functions
+#--------------------------------------------
+
 #--------------------------------------------
 # Infer datatypes of the columns in a csv and
 # return a list of dicts with the columns names,
 # length, and type
 #--------------------------------------------
-def get_column_types(filepath):
+def get_column_names(filepath):
+    sample_rows = []
+
+    with open(filepath, 'r') as f:
+        for i, line in enumerate(f):
+            linef = line.split(',')
+            # Append the first row to the list of headers
+            if i == 0:
+                columns = linef
+            # Only get sample data from the first four rows
+            elif i < 4:
+                sample_rows.append(linef)
+            else:
+                break
+
+    # Clean the column names
+    headers = [{'name': column, 'sample_data': []} for column in clean(columns)]
+
+    # Add the sample data to the relevant header
+    for sample_row in sample_rows:
+        for i in range(len(sample_row)):
+            headers[i]['sample_data'].append(str(sample_row[i]))
+
+    # Format the list of sample data
+    for h in headers:
+        h['sample_data'] = (', ').join(h['sample_data']) + ' ...'
+
+    return headers
+
+
+#--------------------------------------------
+# Infer datatypes of the columns in a csv and
+# return a list of dicts with the columns names,
+# length, and type
+#--------------------------------------------
+def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
     f = open(filepath,'r')
     csv_table = table.Table.from_csv(f)
     sql_table = sql.make_table(csv_table)
-
-    headers = [] # Will hold information about all of our column headings
-    preexisting = [] # Will keep track of duplicate column names
 
     for column in sql_table.columns:
 
@@ -41,42 +105,19 @@ def get_column_types(filepath):
         if raw_type == 'BOOLEAN':
             raw_type = 'VARCHAR(10)'
 
-        # Append a number to a column if that column name already exists in the table
-        clean_name = str(column.name)
-        if clean_name in preexisting:
-            preexisting.append(clean_name)
-            c = preexisting.count(clean_name) - 1
-            clean_name += str(c)
-
-        # Remove spaces at the beginning of the string, replace spaces and
-        # underscores with hyphens, strip all non-alphanumeric characters
-        rs = [(r'^ |^-|^_', ''), (r' |-', '_'), (r'[^_0-9a-zA-Z]+', '')]
-        for r, sub_ in rs:
-            clean_name = re.sub(r, sub_, clean_name)
-        clean_name = clean_name.lower()[:60] # MySQL allows 64 character column names max
-
         try:
             length = column.type.length
         except AttributeError:
             length = ''
-        headers.append({
-            'name': clean_name, 
-            'datatype': clean_type,
-            'raw_type': raw_type,
-            'length': length,
-            'sample_data': []
-        })
+
+        for col in headers:
+            col['datatype'] = clean_type
+            col['raw_type'] = raw_type
+            col['length'] = length,
 
     # Give the user sample data to help them categorize the different columns
     data = csv_table.to_rows()
 
-    for row in data[:3]:
-        for i in range(len(row)):
-            ex = str(row[i])
-            headers[i]['sample_data'].append(ex)
-
-    for h in headers:
-        h['sample_data'] = (', ').join(h['sample_data']) + ' ...'
 
     return headers
 

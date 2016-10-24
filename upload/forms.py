@@ -35,24 +35,37 @@ class DataForm(forms.Form):
         connection = engine.connect()
         data = connection.execute('SHOW DATABASES;')
 
-        databases = []
+        databases = [[None, 'None selected']]
         for db in data:
             pair = list(db)
             pair.extend(list(db))
             databases.append(pair)
 
-        self.fields['db_name'] = forms.ChoiceField(label='Database', choices=databases, initial='user_cox')
+        self.fields['db_select'] = forms.ChoiceField(label='Select a database',
+            choices=databases,
+            initial=None,
+            required=False)
 
-        # Set classes on form inputs
+        # Set Bootstrap classes on form inputs
         for field in self.fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
 
+    # Customize the clean method to check that one and only one of the two DB 
+    # inputs contains valid data
+    def clean(self):
+        cleaned_data = super(DataForm, self).clean()
+        select = cleaned_data.get('db_select')
+        if not cleaned_data.get('db_input') and not cleaned_data.get('db_select'):
+            raise forms.ValidationError(
+                'Please select a database or input a new database name'
+            )
+
     data_file = forms.FileField(label='File')
     table_name = forms.SlugField(label='Table name', max_length=100)
+    db_input = forms.CharField(label='Create a new database', max_length=100, required=False)
     #delimiter = forms.ChoiceField(label='Delimiter', choices=DELIMITERS, initial=',')
     source = forms.CharField(label='Source', max_length=100, required=False)
     topic = forms.CharField(label='Topic', max_length=100, required=False)
-    reporter_name = forms.ChoiceField(label='Reporter who aquired data', choices=REPORTERS)
     next_aquisition = forms.DateField(label='When to update data', widget=forms.SelectDateWidget, required=False)
     press_contact = forms.CharField(label='Press contact name', max_length=100, required=False)
     press_contact_number = forms.CharField(label='Press contact number', max_length=100, required=False)
