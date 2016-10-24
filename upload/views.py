@@ -36,6 +36,10 @@ from upload.tasks import load_infile
 def upload_file(request):
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
+
+    # Get a list of most recent uploads to display in the sidebar
+    uploads = Table.objects.order_by('-upload_time')[:5]
+
     if request.method == 'POST':
         if form.is_valid():
             table_name = form.cleaned_data['table_name']
@@ -58,6 +62,7 @@ def upload_file(request):
                 'path': path,
                 'test_path': test_path,
                 #'delimiter': form.cleaned_data['delimiter'],
+                'topic': form.cleaned_data['topic'],
                 'db_name': form.cleaned_data['db_name'],
                 'source': form.cleaned_data['source'],
                 'table_name': table_name
@@ -66,7 +71,7 @@ def upload_file(request):
             return redirect('/categorize/')
 
     # If request method isn't POST or if the form data is invalid
-    return render(request, 'upload/file-select.html', {'form': form})
+    return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})
 
 #------------------------------------#
 # Prompt the user to select categories
@@ -81,7 +86,6 @@ def categorize(request):
     headers = get_column_types(test_path)
     request.session['headers'] = headers
     print '--- Time elapsed for get_column_types: {} seconds ---'.format(time.time() - start_time)
-
     context = {
         'headers': headers,
         'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
@@ -114,6 +118,7 @@ def check_task_status(request):
         t = Table(
             table=params['table_name'],
             database=params['db_name'],
+            topic=params['topic'],
             user=request.user,
             source=params['source'],
             upload_log=data['result']['warnings']
@@ -147,7 +152,7 @@ def upload(request):
     # TODO figure out how to validate a programatically generated form
     if request.method == 'POST':
         params = request.session['table_params']
-        fparams = {key: value for key, value in params.items() if key != 'source' and key != 'test_path'}
+        fparams = {key: value for key, value in params.items()}
         fparams['columns'] = request.session['headers']
 
         task = load_infile.delay(**fparams)

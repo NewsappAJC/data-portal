@@ -8,6 +8,7 @@ class Table(models.Model):
     user = models.ForeignKey(User)
     database = models.CharField(max_length=300, blank=False, null=False)
     table = models.CharField(max_length=300, blank=False, null=False)
+    topic = models.CharField(max_length=300, blank=True, null=True)
     upload_time = models.DateTimeField(auto_now_add=True)
     upload_log = models.TextField(blank=True)
     source = models.CharField(max_length=300, blank=False, null=False)

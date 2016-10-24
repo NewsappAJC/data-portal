@@ -2,7 +2,7 @@
 
 {% block content %}
 <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
-<h3>Mark column categories. This will make searching easier.</h3>
+<h3>Mark column categories</h3>
 <div class="categorize-form-holder">
   <form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -15,7 +15,7 @@
               <span class="cat-example">{{ header.sample_data }}</span>
             ]
           </div>
-          <select class="form-control" name="{{ header.name }}">
+          <select class="form-control short" name="{{ header.name }}">
           {% for cat in ajc_categories %}
             <option value="{{ cat.0 }}">{{ cat.1 }}</option>
           {% endfor %}

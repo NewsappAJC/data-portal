@@ -30,3 +30,13 @@ button.logout {
 #details {
   overflow-x: auto;
 }
+
+.credit {
+  clear: both;
+  text-align: center;
+  padding: 40px;
+}
+
+.short {
+  width: 250px;
+}

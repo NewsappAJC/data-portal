@@ -70,13 +70,13 @@ def get_column_types(filepath):
     # Give the user sample data to help them categorize the different columns
     data = csv_table.to_rows()
 
-    for row in data[:5]:
+    for row in data[:3]:
         for i in range(len(row)):
             ex = str(row[i])
             headers[i]['sample_data'].append(ex)
 
     for h in headers:
-        h['sample_data'] = (', ').join(h['sample_data'])
+        h['sample_data'] = (', ').join(h['sample_data']) + ' ...'
 
     return headers
 
