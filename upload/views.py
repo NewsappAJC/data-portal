@@ -120,7 +120,7 @@ def check_task_status(request):
         )
         t.save()
 
-        # Create column objects for each column in the headers list
+        # Create column objects for each column in the table
         for header in request.session['headers']:
             c = Column(table=t, 
                 column=header['name'],
@@ -131,7 +131,13 @@ def check_task_status(request):
 
         c.save()
 
-    return JsonResponse(data)
+    try:
+        return JsonResponse(data)
+    # If response isn't JSON serializable it's an error message. Convert it to
+    # a string and return that instead
+    except TypeError:
+        data['result'] = str(data['result'])
+        return JsonResponse(data)
 
 @login_required
 def upload(request):

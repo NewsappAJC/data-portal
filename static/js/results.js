@@ -61,7 +61,7 @@ function checkResponseStatus(res) {
         warnings_html = res.result.warnings.map(function(w) {
           return `<li>${w}</li>`
         });
-        $('#warnings').html(`<ul>${warnings_html.join(' ')}</ul>`)
+        $('#warnings').html(`<h2>Warnings</h2><ul>${warnings_html.join(' ')}</ul>`)
         $('#progress-message').html('Finished (with warnings)')
 
         $('#current-state').html('<span class="label label-warning">SUCCESS</span>');

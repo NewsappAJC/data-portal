@@ -43,7 +43,7 @@ def forward(instance, step, message):
 # to load the csv into it.
 #---------------------------------------
 @shared_task(bind=True)
-def load_infile(self, path, delimiter, db_name, table_name, columns):
+def load_infile(self, path, db_name, table_name, columns, delimiter=','):
     # Keep track of progress
     step = forward(self, 0, 'Connecting to MySQL server')
 
