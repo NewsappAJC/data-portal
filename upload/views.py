@@ -57,7 +57,7 @@ def upload_file(request):
             request.session['table_params'] = {
                 'path': path,
                 'test_path': test_path,
-                'delimiter': form.cleaned_data['delimiter'],
+                #'delimiter': form.cleaned_data['delimiter'],
                 'db_name': form.cleaned_data['db_name'],
                 'source': form.cleaned_data['source'],
                 'table_name': table_name

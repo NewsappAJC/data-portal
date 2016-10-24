@@ -24,11 +24,12 @@ def polish_create_table(create_table):
 def get_column_types(filepath):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
-    # TODO Do this in chunks so as not to ov_erwhelm system memory
     f = open(filepath,'r')
     csv_table = table.Table.from_csv(f)
     sql_table = sql.make_table(csv_table)
-    headers = []
+
+    headers = [] # Will hold information about all of our column headings
+    preexisting = [] # Will keep track of duplicate column names
 
     for column in sql_table.columns:
 
@@ -40,7 +41,13 @@ def get_column_types(filepath):
         if raw_type == 'BOOLEAN':
             raw_type = 'VARCHAR(10)'
 
+        # Append a number to a column if that column name already exists in the table
         clean_name = str(column.name)
+        if clean_name in preexisting:
+            preexisting.append(clean_name)
+            c = preexisting.count(clean_name) - 1
+            clean_name += str(c)
+
         # Remove spaces at the beginning of the string, replace spaces and
         # underscores with hyphens, strip all non-alphanumeric characters
         rs = [(r'^ |^-|^_', ''), (r' |-', '_'), (r'[^_0-9a-zA-Z]+', '')]

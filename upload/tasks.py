@@ -51,8 +51,6 @@ def load_infile(self, path, delimiter, db_name, table_name, columns):
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
 
-    # Keep track of progress
-
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columns]
     sql_args = {

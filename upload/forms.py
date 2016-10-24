@@ -26,11 +26,11 @@ DELIMITERS = (
 )
 
 class DataForm(forms.Form):
+    # Initialize the data upload form with a list of databases on the MySQL server
     def __init__(self, *args, **kwargs):
         super(DataForm, self).__init__(*args, **kwargs)
 
-        # Get database options TODO maybe there's a better way to do this
-        # than running an expensive operation like connecting to the server?
+        # Get database options
         engine = sqlalchemy.create_engine(URL)
         connection = engine.connect()
         data = connection.execute('SHOW DATABASES;')
@@ -49,7 +49,7 @@ class DataForm(forms.Form):
 
     data_file = forms.FileField(label='File')
     table_name = forms.SlugField(label='Table name', max_length=100)
-    delimiter = forms.ChoiceField(label='Delimiter', choices=DELIMITERS, initial=',')
+    #delimiter = forms.ChoiceField(label='Delimiter', choices=DELIMITERS, initial=',')
     source = forms.CharField(label='Source', max_length=100, required=False)
     topic = forms.CharField(label='Topic', max_length=100, required=False)
     reporter_name = forms.ChoiceField(label='Reporter who aquired data', choices=REPORTERS)
