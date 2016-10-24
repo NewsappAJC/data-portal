@@ -2,6 +2,7 @@
 
 {% block content %}
 <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
+<em>Note: This tool currently accepts only CSV files, with column headers in the first row. We're working on accepting more file formats</em>
 <div class="row">
 
   <div class="col-sm-3">
@@ -16,6 +17,7 @@
           <a href="/search/"><div>{{upload.table}}</div></a>
           <div class="timestamp">{{upload.upload_time}}</div>
           <div class="topic">Topic: {{upload.topic}}</div>
+          <div><em>Uploaded by {{upload.user}}</em></div>
         </li>
       {% endfor %}
     </ul>

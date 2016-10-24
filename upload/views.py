@@ -112,8 +112,7 @@ def check_task_status(request):
 
     # If the task is successful, write information about the upload to the Django DB
     if data['status'] == 'SUCCESS' and not data['result']['error']:
-        # Create a table object in the database only if the write to the AJC
-        # DB is successful
+        # Create a table object in the Django DB
         params = request.session['table_params']
         t = Table(
             table=params['table_name'],
@@ -133,8 +132,7 @@ def check_task_status(request):
                 information_type=header['category'],
                 column_size=header['length']
             )
-
-        c.save()
+            c.save()
 
     try:
         return JsonResponse(data)
