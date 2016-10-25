@@ -2,6 +2,7 @@
 import re
 import pdb # for debugging only
 from collections import defaultdict
+from celery.contrib import rdb
 
 # Django imports
 from django.conf import settings
@@ -49,34 +50,36 @@ def clean(names):
 #--------------------------------------------
 
 #--------------------------------------------
-# Infer datatypes of the columns in a csv and
-# return a list of dicts with the columns names,
-# length, and type
+# Get column names and sample data from a CSV
+# without loading the whole csv into memory
+# for display by the categorize view
 #--------------------------------------------
 def get_column_names(filepath):
     sample_rows = []
 
     with open(filepath, 'r') as f:
+        # Loop through lines to avoid reading the entire file into memory
         for i, line in enumerate(f):
             linef = line.split(',')
             # Append the first row to the list of headers
             if i == 0:
                 columns = linef
-            # Only get sample data from the first four rows
+            # Only get sample data from the first 3 rows
             elif i < 4:
                 sample_rows.append(linef)
+            # After 4 lines, stop reading the CSV
             else:
                 break
 
     # Clean the column names
     headers = [{'name': column, 'sample_data': []} for column in clean(columns)]
 
-    # Add the sample data to the relevant header
+    # Give each header
     for sample_row in sample_rows:
         for i in range(len(sample_row)):
             headers[i]['sample_data'].append(str(sample_row[i]))
 
-    # Format the list of sample data
+    # Format the sample data for display
     for h in headers:
         h['sample_data'] = (', ').join(h['sample_data']) + ' ...'
 
@@ -95,7 +98,7 @@ def get_column_types(filepath, headers):
     csv_table = table.Table.from_csv(f)
     sql_table = sql.make_table(csv_table)
 
-    for column in sql_table.columns:
+    for i, column in enumerate(sql_table.columns):
 
         # Clean the type and name values
         raw_type = str(column.type)
@@ -110,14 +113,11 @@ def get_column_types(filepath, headers):
         except AttributeError:
             length = ''
 
-        for col in headers:
-            col['datatype'] = clean_type
-            col['raw_type'] = raw_type
-            col['length'] = length,
+        print raw_type
 
-    # Give the user sample data to help them categorize the different columns
-    data = csv_table.to_rows()
-
+        headers[i]['datatype'] = clean_type
+        headers[i]['raw_type'] = raw_type
+        headers[i]['length'] = length,
 
     return headers
 

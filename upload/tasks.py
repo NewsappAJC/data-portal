@@ -52,10 +52,11 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
     connection = engine.connect()
 
     step = forward(self, step, 'Inferring datatype of columns. This can take a while')
-    columns = get_column_types(path, columns)
+    columnsf = get_column_types(path, columns)
 
     # Convert column types back to strings for use in the create table statement
-    stypes = ['{name} {raw_type}'.format(**x) for x in columns]
+    stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
+    rdb.set_trace()
     sql_args = {
         'table': table_name,
         'columns': (',').join(stypes),
@@ -115,5 +116,5 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
     dataf.append([x for x in data.keys()])
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
-    return {'error': False, 'data': dataf, 'warnings': sql_warnings}
+    return {'error': False, 'data': dataf, 'headers': columns, 'warnings': sql_warnings}
 

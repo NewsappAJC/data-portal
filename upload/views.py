@@ -126,11 +126,14 @@ def check_task_status(request):
         t.save()
 
         # Create column objects for each column in the table
-        for header in request.session['headers']:
+        # Some of the data about each column is held in session storage,
+        # some is returned by the task. Both store the columns in the same order.
+        session_headers = request.session['headers']
+        for i, header in enumerate(data['result']['headers']):
             c = Column(table=t, 
-                column=header['name'],
+                column=session_headers[i]['name'],
                 mysql_type=header['datatype'],
-                information_type=header['category'],
+                information_type=session_headers[i]['category'],
                 column_size=header['length']
             )
             c.save()
@@ -158,10 +161,9 @@ def upload(request):
         request.session['task_id'] = task.id # Use the id to poll Redis for task status
         headers = request.session['headers']
 
+        # Probably needlessly complex logic to set the category for each columns
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         for key in keys:
-            # Stupidly complex logic to get the key of the dict item with a name matching the 
-            # current name. Set that headers category value
             hindex = [i for i, val in enumerate(headers) if headers[i]['name'] == key][0]
             headers[hindex]['category'] = request.POST[key]
 
