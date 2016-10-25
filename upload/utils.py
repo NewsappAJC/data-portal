@@ -108,6 +108,10 @@ def get_column_types(filepath, headers):
         if raw_type == 'BOOLEAN':
             raw_type = 'VARCHAR(10)'
 
+        if raw_type == 'DATETIME':
+            # Dumb guess at the maximum length of a datetime field. Find better way?
+            raw_type = 'VARCHAR(100)'
+
         try:
             length = column.type.length
         except AttributeError:

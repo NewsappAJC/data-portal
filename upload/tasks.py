@@ -56,7 +56,6 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
 
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
-    rdb.set_trace()
     sql_args = {
         'table': table_name,
         'columns': (',').join(stypes),
