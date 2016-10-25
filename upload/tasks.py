@@ -91,12 +91,14 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
             # Check if a database with the given name exists. If it doesn't, create one.
             step = forward(self, step, 'Connecting to database {}'.format(db_name))
 
-            databases = [d[0] for d in connection.execute(text('SHOW DATABASES;'))]
             rdb.set_trace()
+            databases = [d[0] for d in connection.execute(text('SHOW DATABASES;'))]
             if db_name not in databases:
-                connection.execute(text('CREATE DATABASE :name;'), {'name': db_name})
+                q1 = text('CREATE DATABASE :name')
+                connection.execute(q1, name=db_name)
 
-            connection.execute(text('USE :name;'), {'name': db_name})
+            q2 = text('USE :name')
+            connection.execute(q2, {'name': db_name})
 
             # Create the table. This raises an error if a table with that names
             # already exists in the database
