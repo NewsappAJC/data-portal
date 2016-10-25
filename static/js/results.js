@@ -57,7 +57,7 @@ function checkResponseStatus(res) {
       $('#progress-message').html('Finished')
       generateTable(res.result);
 
-      if (res.result.warnings) {
+      if (res.result.warnings.length > 0) {
         warnings_html = res.result.warnings.map(function(w) {
           return `<li>${w}</li>`
         });

@@ -86,9 +86,13 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
         # Check if a database with the given name exists. If it doesn't, create one.
         # If a SQL error is thrown, end the process and return a summary of the error
         try:
-            step = forward(self, step, 'Connecting to database')
-            connection.execute('CREATE DATABASE IF NOT EXISTS {}'.format(db_name))
-            connection.execute('USE {}'.format(db_name))
+            step = forward(self, step, 'Connecting to database {}'.format(db_name))
+            databases = [d[0] for d in connection.execute('SHOW DATABASES;')]
+            
+            if db_name not in databases:
+                connection.execute('CREATE DATABASE {};'.format(db_name))
+
+            connection.execute('USE {};'.format(db_name))
 
             step = forward(self, step, 'Creating table')
             connection.execute(create_table_query)
