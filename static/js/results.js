@@ -8,10 +8,8 @@ function getResult(cb) {
     success: function(res) {
       c++;
       if (cb(res) == 'incomplete') {
-        if (c < 50) {
-          console.log('trying...')
-          setTimeout(getResult(checkResponseStatus), 500)
-        }
+        console.log('trying...')
+        setTimeout(getResult(checkResponseStatus), 500)
       }
     },
     error: function(res) {
