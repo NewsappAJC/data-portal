@@ -74,7 +74,7 @@ function checkResponseStatus(res) {
       return;
     }
     else if (res.status == 'PENDING') {
-      return
+      return 'incomplete';
     }
     else {
       $('#current-state').html('<span class="label label-danger">FAILURE</span>');
