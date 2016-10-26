@@ -151,8 +151,15 @@ def upload(request):
     # Begin load data infile query as a separate task so it doesn't slow response
     # load_infile accepts the following arguments:
     # (db_name, table_name, path, delimiter=',')
-    # TODO figure out how to validate a programatically generated form
     if request.method == 'POST':
+        keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
+        # Have to validate manually bc can't use a Django form class for a dynamically
+        # generated form
+        if len(keys) < len(request.session['headers']):
+            messages.add_message(request, messages.ERROR, 'Please select a category for every column')
+            return redirect('/categorize/')
+
+        # Have to do this instead of using form class bc fields are dynamically generated
         params = request.session['table_params']
         fparams = {key: value for key, value in params.items()}
         fparams['columns'] = request.session['headers']
@@ -162,7 +169,6 @@ def upload(request):
         headers = request.session['headers']
 
         # Probably needlessly complex logic to set the category for each columns
-        keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         for key in keys:
             hindex = [i for i, val in enumerate(headers) if headers[i]['name'] == key][0]
             headers[hindex]['category'] = request.POST[key]
