@@ -43,7 +43,7 @@ def clean(names):
         for r, sub_ in rs:
             clean_name = re.sub(r, sub_, clean_name.strip())
 
-        # MySQL allows 64 character column names max
+        # MySQL allows 64 character column names maximum
         clean_names.append(clean_name.lower()[:60])
 
     return clean_names
@@ -98,11 +98,10 @@ def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
     f = open(filepath,'r')
-    csv_table = table.Table.from_csv(f)
+    csv_table = table.Table.from_csv(f, delimiter=',')
     sql_table = sql.make_table(csv_table)
 
     for i, column in enumerate(sql_table.columns):
-
         # Clean the type and name values
         raw_type = str(column.type)
         clean_type = re.sub(r'\(\w+\)', '', raw_type)

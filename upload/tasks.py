@@ -18,6 +18,7 @@ from sqlalchemy.engine.url import make_url
 from celery import shared_task
 from celery.contrib import rdb
 import boto3
+from csvkit import sql, table
 
 # Local module imports
 from .utils import get_column_types
@@ -57,7 +58,8 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
     connection = engine.connect()
 
     step = forward(self, step, 'Inferring datatype of columns. This can take a while')
-    columnsf = get_column_types(path, columns)
+    rdb.set_trace()
+    columnsf = get_column_types_d(path, columns)
 
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
@@ -87,7 +89,6 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
 
 
     sql_warnings = []
-
     # Record all warnings raised by the writing to the MySQL db. SQLAlchemy doesn't
     # always raise exceptions for data loss
     with warnings.catch_warnings(record=True) as w:
@@ -134,5 +135,11 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
     dataf.append([x for x in data.keys()])
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
-    return {'error': False, 'data': dataf, 'headers': columns, 'warnings': sql_warnings}
+    return {'error': False,
+        'table': table_name,
+        'db': db_name,
+        'data': dataf,
+        'headers': columns,
+        'warnings': sql_warnings
+    }
 

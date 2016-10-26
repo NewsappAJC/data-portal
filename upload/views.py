@@ -45,15 +45,12 @@ def upload_file(request):
             table_name = form.cleaned_data['table_name']
             # Write the file to a path in the /tmp directory for manipulation later
             path = '/tmp/{}.csv'.format(table_name)
-            test_path = '/tmp/{}-sample.csv'.format(table_name)
 
-            with open(path, 'wb+') as f, open(test_path, 'w') as test_f:
+            with open(path, 'wb+') as f:
                 # Handle uploaded file in chunks so we don't overwhelm the system's memory
                 for i, chunk in enumerate(request.FILES['data_file'].chunks()):
                     # Write the first chunk to a sample file that we can use later to 
                     # infer datatype without reading the whole file into memory
-                    if i == 0:
-                        test_f.write(chunk)
                     f.write(chunk)
 
             # Store the table config in session storage so that other views can
@@ -61,7 +58,6 @@ def upload_file(request):
             db_name = form.cleaned_data['db_input'] or form.cleaned_data['db_select']
             request.session['table_params'] = {
                 'path': path,
-                'test_path': test_path,
                 #'delimiter': form.cleaned_data['delimiter'],
                 'topic': form.cleaned_data['topic'],
                 'db_name': db_name,
@@ -82,9 +78,9 @@ def upload_file(request):
 @login_required
 def categorize(request):
     # Infer column datatypes
-    test_path = request.session['table_params']['test_path']
+    path = request.session['table_params']['path']
     start_time = time.time()
-    headers = get_column_names(test_path)
+    headers = get_column_names(path)
     request.session['headers'] = headers
 
     context = {
