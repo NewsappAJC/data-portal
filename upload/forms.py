@@ -50,6 +50,16 @@ class DataForm(forms.Form):
         for field in self.fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
 
+    # Internal method that checks for non-alphanumeric characters and raises an error
+    # if it encounters them
+    def _sanitize(self, data):
+        r = re.compile(r'\W')
+        if r.search(data) != None:
+            raise forms.ValidationError(
+                'Only alphanumeric characters and underscores (_) are allowed in the database name'
+            )
+        return data
+
     # Customize the clean method to check that one and only one of the two DB 
     # inputs contains valid data
     def clean(self):
@@ -63,17 +73,17 @@ class DataForm(forms.Form):
     # Prevent SQL injection by escaping any data that will be passed as 
     # parameters to the raw SQL query
     def clean_db_input(self):
-        data = self.cleaned_data['db_input']
-        r = re.compile(r'\W')
-        if r.search(data) != None:
-            raise forms.ValidationError(
-                'Only alphanumeric characters and underscores (_) are allowed in the database name'
-            )
+        data = self._sanitize(self.cleaned_data['db_input'])
+        return data
+
+    # Maybe write a validat
+    def clean_db_input(self):
+        data = self._sanitize(self.cleaned_data['db_input'])
         return data
 
 
     data_file = forms.FileField(label='File')
-    table_name = forms.SlugField(label='Table name', max_length=100)
+    table_name = forms.CharField(label='Table name', max_length=100)
     db_input = forms.CharField(label='Create a new database', max_length=100, required=False)
     #delimiter = forms.ChoiceField(label='Delimiter', choices=DELIMITERS, initial=',')
     source = forms.CharField(label='Source', max_length=100, required=False)

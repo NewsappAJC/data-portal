@@ -140,7 +140,9 @@
         </div>
 
         {% if form.non_field_errors %}
-          {{ form.non_field_errors }}
+          <div class="error"
+            {{ form.non_field_errors }}
+          </div>
         {% endif %}
 
         <div>

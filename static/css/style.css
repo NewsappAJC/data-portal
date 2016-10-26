@@ -19,6 +19,10 @@ button.logout {
   padding: 10px;
 }
 
+.error {
+  color: #f27979
+}
+
 .message {
   position: relative;
   padding: 10px;
