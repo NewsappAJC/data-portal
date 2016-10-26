@@ -25,6 +25,9 @@ DELIMITERS = (
     (';', 'semicolon')
 )
 
+# 10MB = 10485760
+MAX_UPLOAD_SIZE = 10485760
+
 class DataForm(forms.Form):
     # Initialize the data upload form with a list of databases on the MySQL server
     def __init__(self, *args, **kwargs):
@@ -67,8 +70,22 @@ class DataForm(forms.Form):
         select = cleaned_data.get('db_select')
         if not cleaned_data.get('db_input') and not cleaned_data.get('db_select'):
             raise forms.ValidationError(
-                'Please select a database or input a new database name'
+                'Please select a database or input a new database name.'
             )
+
+    # Ensure that the file isn't >10MB. Maybe we'll be able to handle that in the
+    # future, but not now.
+    def clean_data_file(self):
+        data = self.cleaned_data['data_file']
+        if data._size > MAX_UPLOAD_SIZE:
+            raise forms.ValidationError(
+                'Sorry, we can\'t handle files bigger than 10MB yet.'
+            )
+        if not data.name.endswith('.csv'):
+            raise forms.ValidationError(
+                'Please select a .csv file'
+            )
+        return data
 
     # Prevent SQL injection by escaping any data that will be passed as 
     # parameters to the raw SQL query
@@ -76,11 +93,9 @@ class DataForm(forms.Form):
         data = self._sanitize(self.cleaned_data['db_input'])
         return data
 
-    # Maybe write a validat
     def clean_table_name(self):
         data = self._sanitize(self.cleaned_data['table_name'])
         return data
-
 
     data_file = forms.FileField(label='File')
     table_name = forms.CharField(label='Table name', max_length=100)
