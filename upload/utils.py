@@ -37,8 +37,11 @@ def clean(names):
         # Use regex to remove spaces at the beginning of the string, replace spaces and
         # underscores with hyphens, remove line breaks, strip all non-alphanumeric 
         # characters
-        r = re.compile(r'\s')
-        clean_name = re.sub(r, '_', name.strip())
+        rs = [(re.compile(r'-|\s'), '_'), (re.compile(r'\W'), '')]
+        clean_name = name
+
+        for r, sub_ in rs:
+            clean_name = re.sub(r, sub_, clean_name.strip())
 
         # MySQL allows 64 character column names max
         clean_names.append(clean_name.lower()[:60])
@@ -71,7 +74,7 @@ def get_column_names(filepath):
             else:
                 break
 
-    # Clean the column names
+    # Clean the column names to prevent SQL injection
     headers = [{'name': column, 'sample_data': []} for column in clean(columns)]
 
     # Give each header
@@ -116,8 +119,6 @@ def get_column_types(filepath, headers):
             length = column.type.length
         except AttributeError:
             length = ''
-
-        print raw_type
 
         headers[i]['datatype'] = clean_type
         headers[i]['raw_type'] = raw_type

@@ -60,6 +60,18 @@ class DataForm(forms.Form):
                 'Please select a database or input a new database name'
             )
 
+    # Prevent SQL injection by escaping any data that will be passed as 
+    # parameters to the raw SQL query
+    def clean_db_input(self):
+        data = self.cleaned_data['db_input']
+        r = re.compile(r'\W')
+        if r.search(data) != None:
+            raise forms.ValidationError(
+                'Only alphanumeric characters and underscores (_) are allowed in the database name'
+            )
+        return data
+
+
     data_file = forms.FileField(label='File')
     table_name = forms.SlugField(label='Table name', max_length=100)
     db_input = forms.CharField(label='Create a new database', max_length=100, required=False)

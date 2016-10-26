@@ -26,6 +26,7 @@ function checkResponseStatus(res) {
       return 'incomplete'
     }
     else if (res.status === 'SUCCESS') {
+      $('#progress-bar').removeClass('active')
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
         $('#progress-message').html('Error')
@@ -78,6 +79,7 @@ function checkResponseStatus(res) {
     }
     else {
       $('#current-state').html('<span class="label label-danger">FAILURE</span>');
+      $('#progress-bar').removeClass('active')
       $('#details').html(res.result)
       return;
     }

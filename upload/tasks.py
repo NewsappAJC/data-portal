@@ -34,6 +34,10 @@ def forward(instance, step, message):
     step += 1
     instance.update_state(state='PROGRESS', meta={'message': message, 'error': False, 'current': step, 'total': TOTAL_STEPS})
     return step
+
+def sanitize(string):
+    r = re.compile(r'\W')
+    return re.sub(r, '', string)
 #---------------------------------------
 # End helper functions
 #---------------------------------------
@@ -44,7 +48,7 @@ def forward(instance, step, message):
 # to load the csv into it.
 #---------------------------------------
 @shared_task(bind=True)
-def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwargs):
+def load_infile(self, path, db_name, table_name, columns, **kwargs):
     # Keep track of progress
     step = forward(self, 0, 'Connecting to MySQL server')
 
@@ -62,22 +66,25 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
         'columns': (',').join(stypes),
         'path': path,
         'db': db_name,
-        'delimiter': delimiter,
-        'time': time.time() # For debugging purposes only
     }
 
-    # TODO change line endings to accept \r\n as well, if necessary
-    create_table_query = text("""
-        CREATE TABLE :table (:columns);
-        """
-    )
+    # Sanitize DB input once more. Table name, path, and columns already sanitized
+    sql_args['db'] = sanitize(sql_args['db'])
 
-    load_data_query = text("""
-        LOAD DATA LOCAL INFILE ":path" INTO TABLE :db.:table
-        FIELDS TERMINATED BY ":delimiter" LINES TERMINATED BY "\n"
+    # TODO change line endings to accept \r\n as well, if necessary
+    # We've sanitized inputs to avoid risk of SQL injection. For explanation
+    # of why we're sanitizing manually instead of passing args to sqlalchemy's execute method, see
+    # http://stackoverflow.com/questions/40249590/sqlalchemy-error-when-adding-parameter-to-string-sql-query
+    create_table_query = """
+        CREATE TABLE {table} ({columns});
+        """.format(**sql_args)
+
+    load_data_query = """
+        LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
+        FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
         IGNORE 1 LINES;
-        """
-    )
+        """.format(**sql_args)
+
 
     sql_warnings = []
 
@@ -91,19 +98,16 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
             # Check if a database with the given name exists. If it doesn't, create one.
             step = forward(self, step, 'Connecting to database {}'.format(db_name))
 
-            rdb.set_trace()
             databases = [d[0] for d in connection.execute(text('SHOW DATABASES;'))]
             if db_name not in databases:
-                q1 = text('CREATE DATABASE :name')
-                connection.execute(q1, name=db_name)
+                connection.execute('CREATE DATABASE {name}'.format(name=sql_args['db']))
 
-            q2 = text('USE :name')
-            connection.execute(q2, {'name': db_name})
+            connection.execute('USE {name}'.format(name=sql_args['db']))
 
             # Create the table. This raises an error if a table with that names
             # already exists in the database
             step = forward(self, step, 'Creating table')
-            connection.execute(create_table_query, **sql_args)
+            connection.execute(create_table_query)
 
             # Execute load data infile statement
             step = forward(self, step, 'Executing load data infile')
@@ -124,7 +128,7 @@ def load_infile(self, path, db_name, table_name, columns, delimiter=',', **kwarg
     # to check if the casting is correct. Save data to session
     # so that it can be accessed by other views
     step = forward(self, step, 'Querying the table for preview data')
-    data = connection.execute('SELECT * FROM :db.:table', **sql_args)
+    data = connection.execute('SELECT * FROM {db}.{table}'.format(**sql_args))
 
     dataf = []
     dataf.append([x for x in data.keys()])
