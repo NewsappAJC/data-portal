@@ -10,12 +10,13 @@
     {% for header in headers %}
       <div class="form-group">
         <label for="{{ header.name }}">{{ header.name }}</label>
-          <div class="cat-examples">
-            [
-              <span class="cat-example">{{ header.sample_data }}</span>
-            ]
-          </div>
-          <select class="form-control short" name="{{ header.name }}">
+        <div class="cat-examples">
+          [
+            <span class="cat-example">{{ header.sample_data }}</span>
+          ]
+        </div>
+        <select class="form-control short" name="{{ header.name }}">
+          <option disabled selected value> -- Select a category -- </option>
           {% for cat in ajc_categories %}
             <option value="{{ cat.0 }}">{{ cat.1 }}</option>
           {% endfor %}

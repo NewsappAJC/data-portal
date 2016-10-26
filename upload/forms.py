@@ -56,7 +56,7 @@ class DataForm(forms.Form):
         r = re.compile(r'\W')
         if r.search(data) != None:
             raise forms.ValidationError(
-                'Only alphanumeric characters and underscores (_) are allowed in the database name'
+                'Only alphanumeric characters and underscores (_) are allowed.'
             )
         return data
 
@@ -77,8 +77,8 @@ class DataForm(forms.Form):
         return data
 
     # Maybe write a validat
-    def clean_db_input(self):
-        data = self._sanitize(self.cleaned_data['db_input'])
+    def clean_table_name(self):
+        data = self._sanitize(self.cleaned_data['table_name'])
         return data
 
 
