@@ -58,7 +58,6 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
     connection = engine.connect()
 
     step = forward(self, step, 'Inferring datatype of columns. This can take a while')
-    rdb.set_trace()
     columnsf = get_column_types_d(path, columns)
 
     # Convert column types back to strings for use in the create table statement

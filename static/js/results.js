@@ -49,8 +49,7 @@ function checkResponseStatus(res) {
       $('#message').html(`
         <div class="alert alert-success">
           <p>Table <strong>${res.result.table}</strong> 
-            was successfully written to the 
-            <strong>${res.result.db}</strong></p>
+            was written to the <strong>${res.result.db}</strong> database.</p>
           <p>
             <a href="/" class="alert-link">Go back to the upload form</a>
           </p>
