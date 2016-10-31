@@ -58,7 +58,7 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
     connection = engine.connect()
 
     step = forward(self, step, 'Inferring datatype of columns. This can take a while')
-    columnsf = get_column_types_d(path, columns)
+    columnsf = get_column_types(path, columns)
 
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
