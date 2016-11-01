@@ -65,7 +65,14 @@ def upload_file(request):
                 'local_path': path
             }
 
-            return redirect('/categorize/')
+            # Begin writing temp file to S3 so that we can access it later
+            task = write_tempfile_to_s3.delay(path, table_name)
+            request.session['task_id'] = task.id
+
+            headers = get_column_names(path)
+            request.session['headers'] = headers
+
+            return redirect('/tmp-upload/')
 
     # If request method isn't POST or if the form data is invalid
     return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})
@@ -77,25 +84,19 @@ def upload_file(request):
 #------------------------------------#
 @login_required
 def categorize(request):
-    # Infer column datatypes
-    table_name = request.session['table_params']['table_name']
-    local_path = request.session['table_params']['local_path']
+    if request.method == 'POST':
+        # Save the path to temp resource on S3 for use later
+        request.session['s3_path'] = request.POST['tempfile']
 
-    # Begin writing temp file to S3 so that we can access it later
-    task = write_tempfile_to_s3.delay(local_path, table_name)
-    request.session['task_id'] = task.id
+        context = {
+            'headers': request.session['headers'],
+            'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+            'datatypes': Column.MYSQL_TYPE_CHOICES
+        }
 
-    start_time = time.time()
-    headers = get_column_names(local_path)
-    request.session['headers'] = headers
+        return render(request, 'upload/categorize.html', context)
 
-    context = {
-        'headers': headers,
-        'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
-        'datatypes': Column.MYSQL_TYPE_CHOICES
-    }
-
-    return render(request, 'upload/categorize.html', context)
+    return redirect('/')
 
 
 #----------------------------------------------------#
@@ -150,12 +151,15 @@ def check_task_status(request):
         return JsonResponse(data)
 
 @login_required
+def tmp_upload(request):
+    return render(request, 'upload/tmp-upload.html')
+
+@login_required
 def upload(request):
     # Begin load data infile query as a separate task so it doesn't slow response
     # load_infile accepts the following arguments:
     # (s3_path, db_name, table_name, columns)
     if request.method == 'POST':
-        s3_path = request.POST.pop('tempfile')
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         # Have to validate manually bc can't use a Django form class for a dynamically
         # generated form
@@ -167,7 +171,7 @@ def upload(request):
         params = request.session['table_params']
         fparams = {key: value for key, value in params.items()}
         fparams['columns'] = request.session['headers']
-        fparams['s3_path'] = s3_path[0]
+        fparams['s3_path'] = request.session['s3_path']
 
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status
