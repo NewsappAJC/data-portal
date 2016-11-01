@@ -22,7 +22,7 @@ from .models import Column, Table, Contact
 from .utils import get_column_types, get_column_names
 # Have to do an absolute import here for celery. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
-from upload.tasks import load_infile
+from upload.tasks import load_infile, write_tempfile_to_s3
 
 
 #------------------------------------#
@@ -78,6 +78,9 @@ def upload_file(request):
 @login_required
 def categorize(request):
     # Infer column datatypes
+    task = write_tempfile_to_s3.delay(request.session['table_params']['table_name'])
+    request.session['id'] = task.id
+
     path = request.session['table_params']['path']
     start_time = time.time()
     headers = get_column_names(path)
@@ -108,31 +111,31 @@ def check_task_status(request):
     }
 
     # If the task is successful, write information about the upload to the Django DB
-    if data['status'] == 'SUCCESS' and not data['result']['error']:
-        # Create a table object in the Django DB
-        params = request.session['table_params']
-        t = Table(
-            table=params['table_name'],
-            database=params['db_name'],
-            topic=params['topic'],
-            user=request.user,
-            source=params['source'],
-            upload_log=data['result']['warnings']
-        )
-        t.save()
+    #if data['status'] == 'SUCCESS' and not data['result']['error']:
+    #    # Create a table object in the Django DB
+    #    params = request.session['table_params']
+    #    t = Table(
+    #        table=params['table_name'],
+    #        database=params['db_name'],
+    #        topic=params['topic'],
+    #        user=request.user,
+    #        source=params['source'],
+    #        upload_log=data['result']['warnings']
+    #    )
+    #    t.save()
 
-        # Create column objects for each column in the table
-        # Some of the data about each column is held in session storage,
-        # some is returned by the task. Both store the columns in the same order.
-        session_headers = request.session['headers']
-        for i, header in enumerate(data['result']['headers']):
-            c = Column(table=t, 
-                column=session_headers[i]['name'],
-                mysql_type=header['datatype'],
-                information_type=session_headers[i]['category'],
-                column_size=header['length']
-            )
-            c.save()
+    #    # Create column objects for each column in the table
+    #    # Some of the data about each column is held in session storage,
+    #    # some is returned by the task. Both store the columns in the same order.
+    #    session_headers = request.session['headers']
+    #    for i, header in enumerate(data['result']['headers']):
+    #        c = Column(table=t, 
+    #            column=session_headers[i]['name'],
+    #            mysql_type=header['datatype'],
+    #            information_type=session_headers[i]['category'],
+    #            column_size=header['length']
+    #        )
+    #        c.save()
 
     try:
         return JsonResponse(data)

@@ -1,4 +1,9 @@
 {% extends 'upload/base.html' %}
+{% load static %}
+
+{% block resources %}
+    <script src="{% static "js/tmpResults.js"%}"></script>
+{% endblock %}
 
 {% block content %}
 <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
@@ -31,7 +36,21 @@
       </div>
     {% endfor %}
 
-    <button type="submit" class="btn btn-primary data-submit">Submit</button>
+    <h3 class="progress-holder">Uploading temp file to S3<span id="current-state">
+        <span class="label label-info">PENDING</span>
+      </span>
+    </h3><span id="progress-message"></span>
+      <div class="progress">
+        <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped active" style="min-width: 2em" role='progressbar'></div>
+      </div>
+    <div id="details"></div>
+    <div id="message"></div>
+    <div id="warnings"></div>
+    <button 
+      type="submit"
+      class="btn btn-primary data-submit"
+      id="continue"
+      disabled>Continue</button>
   </form>
 </div>
 

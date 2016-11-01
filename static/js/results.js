@@ -1,6 +1,3 @@
-// Constants
-var c = 0;
-
 function getResult(cb) {
   $.ajax({
     type: 'GET', 
