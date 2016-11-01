@@ -78,7 +78,11 @@ def upload_file(request):
 @login_required
 def categorize(request):
     # Infer column datatypes
-    task = write_tempfile_to_s3.delay(request.session['table_params']['table_name'])
+    table_name = request.session['table_params']['table_name']
+    local_path = request.session['table_params']['path']
+
+    # Begin writing temp file to S3 so that we can access it later
+    task = write_tempfile_to_s3.delay(local_path, table_name)
     request.session['id'] = task.id
 
     path = request.session['table_params']['path']

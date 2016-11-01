@@ -146,30 +146,39 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
 
 
 @shared_task(bind=True)
-def write_tempfile_to_s3(self, table_name, s=0):
+def write_tempfile_to_s3(self, local_path, table_name):
     """
     Write a temporary file to the S3 server.
     """
-    path = 'tmp/{name}({s})'.format(name=table_name, s=s)
-    total = 3
+
     # Begin session with S3 server using ./aws/credentials file
     session = boto3.Session(profile_name='data_warehouse')
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
+    total = 3
+    s = 0
+
     # Check if a file with the same name already exists in the
     # S3 bucket, and if so change the name of the upload and try again
-    try:
-        step = forward(self, 0, 'Checking S3 for file with name {}'.format(path), total)
-        bucket.download_file(path, '/tmp/s3_test_file')
-        write_to_s3(path, s + 1)
-    except botocore.exceptions.ClientError:
-        step = forward(self, step, 'Uploading file to S3', total)
-        bucket.put_object(Key=path, Body=fcontent)
+    while True:
+        s3_path = 'tmp/{name}({s})'.format(name=table_name, s=s)
 
+        try:
+            step = forward(self, 0, 'Checking S3 for file with name {}'.format(s3_path), total)
+            bucket.download_file(s3_path, '/tmp/s3_throwaway')
+            s += 1
+            continue
+
+        except botocore.exceptions.ClientError:
+            break
+
+    rdb.set_trace()
+    step = forward(self, step, 'Uploading file to S3', total)
+    bucket.upload_file(local_path, s3_path)
     step = forward(self, step, 'Success'.format(BUCKET_NAME), total)
 
-    return {'path': path}
+    return {'path': s3_path}
 
 def get_from_s3(path):
     """
