@@ -3,7 +3,6 @@ function getResult(cb) {
     type: 'GET', 
     url: '/check-task-status/',
     success: function(res) {
-      c++;
       if (cb(res) == 'incomplete') {
         console.log('trying...')
         setTimeout(getResult(checkResponseStatus), 500)

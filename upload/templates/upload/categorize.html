@@ -35,6 +35,13 @@
         </select>
       </div>
     {% endfor %}
+    <input type="hidden" name="tempfile" id="tempfile"/>
+    <button 
+      type="submit"
+      class="btn btn-primary data-submit"
+      id="continue"
+      disabled>Continue</button>
+  </form>
 
     <h3 class="progress-holder">Uploading temp file to S3<span id="current-state">
         <span class="label label-info">PENDING</span>
@@ -46,12 +53,6 @@
     <div id="details"></div>
     <div id="message"></div>
     <div id="warnings"></div>
-    <button 
-      type="submit"
-      class="btn btn-primary data-submit"
-      id="continue"
-      disabled>Continue</button>
-  </form>
 </div>
 
 {% endblock %}

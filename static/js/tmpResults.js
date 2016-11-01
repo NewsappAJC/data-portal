@@ -14,6 +14,7 @@ function getResult(cb) {
   });
 };
 
+
 function checkResponseStatus(res) {
     console.log(res)
     if (res.status == 'PROGRESS') {
@@ -32,6 +33,7 @@ function checkResponseStatus(res) {
       $('#progress-bar').css('width', '100%');
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
       $('#progress-message').html('Finished')
+      $('#tempfile').val(res.result.s3_path) // Hold the s3 path in a hidden input so we can pass it to the next view
       $('#continue').prop('disabled', false);
 
       return;

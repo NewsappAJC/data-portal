@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import time
+import pdb
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -57,12 +58,11 @@ def upload_file(request):
             # access it.
             db_name = form.cleaned_data['db_input'] or form.cleaned_data['db_select']
             request.session['table_params'] = {
-                'path': path,
-                #'delimiter': form.cleaned_data['delimiter'],
                 'topic': form.cleaned_data['topic'],
                 'db_name': db_name,
                 'source': form.cleaned_data['source'],
-                'table_name': table_name
+                'table_name': table_name,
+                'local_path': path
             }
 
             return redirect('/categorize/')
@@ -79,15 +79,14 @@ def upload_file(request):
 def categorize(request):
     # Infer column datatypes
     table_name = request.session['table_params']['table_name']
-    local_path = request.session['table_params']['path']
+    local_path = request.session['table_params']['local_path']
 
     # Begin writing temp file to S3 so that we can access it later
     task = write_tempfile_to_s3.delay(local_path, table_name)
-    request.session['id'] = task.id
+    request.session['task_id'] = task.id
 
-    path = request.session['table_params']['path']
     start_time = time.time()
-    headers = get_column_names(path)
+    headers = get_column_names(local_path)
     request.session['headers'] = headers
 
     context = {
@@ -107,6 +106,7 @@ def categorize(request):
 #----------------------------------------------------#
 @login_required
 def check_task_status(request):
+    params = []
     p_id = request.session['task_id']
     response = AsyncResult(p_id)
     data = {
@@ -153,8 +153,9 @@ def check_task_status(request):
 def upload(request):
     # Begin load data infile query as a separate task so it doesn't slow response
     # load_infile accepts the following arguments:
-    # (db_name, table_name, path, delimiter=',')
+    # (s3_path, db_name, table_name, columns)
     if request.method == 'POST':
+        s3_path = request.POST.pop('tempfile')
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         # Have to validate manually bc can't use a Django form class for a dynamically
         # generated form
@@ -166,6 +167,7 @@ def upload(request):
         params = request.session['table_params']
         fparams = {key: value for key, value in params.items()}
         fparams['columns'] = request.session['headers']
+        fparams['s3_path'] = s3_path[0]
 
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status

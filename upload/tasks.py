@@ -44,30 +44,44 @@ def sanitize(string):
 #---------------------------------------
 
 @shared_task(bind=True)
-def load_infile(self, path, db_name, table_name, columns, **kwargs):
+def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     """
     A celery task that accesses a dataabse
     and executes a LOAD DATA INFILE query
     to load the csv into it.
     """
     total = 7
+    step = forward(self, 0, 'Downloading data from Amazon S3', total)
+
+    session = boto3.Session(profile_name='data_warehouse')
+    s3 = session.resource('s3')
+    bucket = s3.Bucket(BUCKET_NAME)
+
+
+    # Check if a file with the same name already exists in the
+    # S3 bucket, and if so throw an error
+    try:
+        local_path = '/' + s3_path
+        bucket.download_file(s3_path, local_path) # Have to download in order to be able to execute load data infile
+    except botocore.exceptions.ClientError:
+        return
 
     # Keep track of progress
-    step = forward(self, 0, 'Connecting to MySQL server')
+    step = forward(self, step, 'Connecting to MySQL server', total)
 
     # Create a connection to the data warehouse 
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
 
     step = forward(self, step, 'Inferring datatype of columns. This can take a while', total)
-    columnsf = get_column_types(path, columns)
+    columnsf = get_column_types(local_path, columns)
 
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
     sql_args = {
         'table': table_name,
         'columns': (',').join(stypes),
-        'path': path,
+        'path': local_path,
         'db': db_name,
     }
 
@@ -104,7 +118,7 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
             if db_name not in databases:
                 connection.execute('CREATE DATABASE {name}'.format(name=sql_args['db']), total)
 
-            connection.execute('USE {name}'.format(name=sql_args['db']), total)
+            connection.execute('USE {name}'.format(name=sql_args['db']))
 
             # Create the table. This raises an error if a table with that names
             # already exists in the database
@@ -129,7 +143,7 @@ def load_infile(self, path, db_name, table_name, columns, **kwargs):
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
     # so that it can be accessed by other views
-    step = forward(self, step, 'Querying the table for preview data')
+    step = forward(self, step, 'Querying the table for preview data', total)
     data = connection.execute('SELECT * FROM {db}.{table}'.format(**sql_args))
 
     dataf = []
@@ -173,26 +187,9 @@ def write_tempfile_to_s3(self, local_path, table_name):
         except botocore.exceptions.ClientError:
             break
 
-    rdb.set_trace()
     step = forward(self, step, 'Uploading file to S3', total)
     bucket.upload_file(local_path, s3_path)
-    step = forward(self, step, 'Success'.format(BUCKET_NAME), total)
+    step = forward(self, step, 'Success', total)
 
-    return {'path': s3_path}
+    return {'s3_path': s3_path}
 
-def get_from_s3(path):
-    """
-    Get a file from s3
-    """
-    session = boto3.Session(profile_name='data_warehouse')
-    s3 = session.resource('s3')
-    bucket = s3.Bucket(BUCKET_NAME)
-
-    # Check if a file with the same name already exists in the
-    # S3 bucket, and if so throw an error
-    try:
-        bucket.download_file(table_name, '/tmp/s3_test_file')
-        messages.add_message(request, messages.ERROR, 'A file with that name already exists in s3')
-        return render(request, 'upload.html', {'form': form})
-    except botocore.exceptions.ClientError:
-        pass

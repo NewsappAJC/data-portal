@@ -1,4 +1,5 @@
 # Python standard lib imports
+import os
 import re
 import pdb # for debugging only
 from collections import defaultdict
@@ -9,6 +10,11 @@ from django.conf import settings
 
 # Third party imports
 from csvkit import sql, table
+import boto3
+import botocore
+
+# Constants
+BUCKET_NAME = os.environ.get('S3_BUCKET')
 
 #remove quote chars csvkit puts around capitalized column names, change engine to MYISAM
 #if routine errors occur, use this to modify the create table statement
@@ -170,3 +176,4 @@ def write_originals_to_s3():
 
     logging.info('File written to S3 bucket')
     return
+
