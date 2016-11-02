@@ -109,7 +109,7 @@ def check_task_status(request):
     params = []
     try:
         p_id = request.session['tmp_id']
-    except KeyError:
+    except KeyError, TypeError:
         p_id = request.session['task_id']
     response = AsyncResult(p_id)
     data = {
@@ -155,10 +155,6 @@ def check_task_status(request):
     except TypeError:
         data['result'] = str(data['result'])
         return JsonResponse(data)
-
-@login_required
-def tmp_upload(request):
-    return render(request, 'upload/tmp-upload.html')
 
 @login_required
 def upload(request):
