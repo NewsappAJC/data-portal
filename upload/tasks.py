@@ -162,7 +162,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
 
 @shared_task(bind=True)
-def write_tempfile_to_s3(self, local_path, table_name):
+def write_tempfile_to_s3(self, upload, table_name):
     """
     Write a temporary file to the S3 server. Used to upload a data file so that
     we can later download it and execute LOAD DATA INFILE on it
@@ -188,6 +188,10 @@ def write_tempfile_to_s3(self, local_path, table_name):
 
         except botocore.exceptions.ClientError:
             break
+
+    local_path = '/tmp/s3_upload'
+    with open(local_path, 'w') as f:
+        f.write(upload)
 
     step = forward(self, step, 'Uploading file to S3', total)
     bucket.upload_file(local_path, s3_path)

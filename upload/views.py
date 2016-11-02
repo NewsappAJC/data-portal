@@ -46,12 +46,8 @@ def upload_file(request):
             table_name = form.cleaned_data['table_name']
             # Write the file to a path in the /tmp directory for manipulation later
             path = '/tmp/{}.csv'.format(table_name)
-
             with open(path, 'wb+') as f:
-                # Handle uploaded file in chunks so we don't overwhelm the system's memory
                 for chunk in request.FILES['data_file'].chunks():
-                    # Write the first chunk to a sample file that we can use later to 
-                    # infer datatype without reading the whole file into memory
                     f.write(chunk)
 
             # Store the table config in session storage so that other views can
@@ -62,11 +58,11 @@ def upload_file(request):
                 'db_name': db_name,
                 'source': form.cleaned_data['source'],
                 'table_name': table_name,
-                'local_path': path
             }
 
             # Begin writing temp file to S3 so that we can access it later
-            task = write_tempfile_to_s3.delay(path, table_name)
+            uploaded = request.FILES['data_file'].read()
+            task = write_tempfile_to_s3.delay(uploaded, table_name)
             request.session['tmp_id'] = task.id
 
             headers = get_column_names(path)
