@@ -100,37 +100,6 @@ def get_column_names(filepath):
 # return a list of dicts with the columns names,
 # length, and type
 #--------------------------------------------
-def get_column_types(filepath, headers):
-    # Load the csv and use csvkit's sql.make_table utility 
-    # to infer the datatypes of the columns.
-    f = open(filepath,'r')
-    csv_table = table.Table.from_csv(f, delimiter=',')
-    sql_table = sql.make_table(csv_table)
-
-    for i, column in enumerate(sql_table.columns):
-        # Clean the type and name values
-        raw_type = str(column.type)
-        clean_type = re.sub(r'\(\w+\)', '', raw_type)
-        
-        # Temporary fix for issue #19
-        if raw_type == 'BOOLEAN':
-            raw_type = 'VARCHAR(10)'
-
-        if raw_type == 'DATETIME':
-            # Dumb guess at the maximum length of a datetime field. Find better way?
-            raw_type = 'VARCHAR(100)'
-
-        try:
-            length = column.type.length
-        except AttributeError:
-            length = ''
-
-        headers[i]['datatype'] = clean_type
-        headers[i]['raw_type'] = raw_type
-        headers[i]['length'] = length,
-
-    return headers
-
 #--------------------------------------------
 # Write the original CSV to s3. The s3 task will
 # load the data from s3

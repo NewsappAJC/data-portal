@@ -20,7 +20,7 @@ from celery.result import AsyncResult
 # Local imports
 from .forms import DataForm
 from .models import Column, Table, Contact
-from .utils import get_column_types, get_column_names
+from .utils import get_column_names
 # Have to do an absolute import here for celery. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile, write_tempfile_to_s3
@@ -43,11 +43,12 @@ def upload_file(request):
 
     if request.method == 'POST':
         if form.is_valid():
+            inputf = request.FILES['data_file']
             table_name = form.cleaned_data['table_name']
             # Write the file to a path in the /tmp directory for manipulation later
             path = '/tmp/{}.csv'.format(table_name)
             with open(path, 'wb+') as f:
-                for chunk in request.FILES['data_file'].chunks():
+                for chunk in inputf.chunks():
                     f.write(chunk)
 
             # Store the table config in session storage so that other views can
@@ -61,9 +62,12 @@ def upload_file(request):
             }
 
             # Begin writing temp file to S3 so that we can access it later
-            uploaded = request.FILES['data_file'].read()
+            inputf.seek(0)
+            uploaded = inputf.read()
             task = write_tempfile_to_s3.delay(uploaded, table_name)
-            request.session['tmp_id'] = task.id
+
+            request.session['task_type'] = 'tmp'
+            request.session['task_id'] = task.id
 
             headers = get_column_names(path)
             request.session['headers'] = headers
@@ -102,25 +106,19 @@ def categorize(request):
 #----------------------------------------------------#
 @login_required
 def check_task_status(request):
-    params = []
-
-    if 'tmp_id' in request.session:
-        p_id = request.session['tmp_id']
-    elif 'task_id' in request.session:
-        p_id = request.session['task_id']
-
+    p_id = request.session['task_id']
     response = AsyncResult(p_id)
     data = {
         'status': response.status,
         'result': response.result
     }
 
-    if data['result'] and 's3_path' in data['result']:
+    if request.session['task_type'] == 'tmp' and 's3_path' in data['result']:
         request.session['s3_path'] = data['result']['s3_path']
 
     # If the task is successful, write information about the upload to the Django DB
     if data['status'] == 'SUCCESS' and 'error' not in data['result']:
-        del request.session['task_id']
+        pass
     #    # Create a table object in the Django DB
     #    params = request.session['table_params']
     #    t = Table(
@@ -175,7 +173,7 @@ def upload(request):
 
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status
-        del request.session['tmp_id'] # Get rid of tmp task id
+        request.session['task_type'] = 'final'
 
         headers = request.session['headers']
 

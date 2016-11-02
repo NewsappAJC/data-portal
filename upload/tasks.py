@@ -21,9 +21,6 @@ import boto3
 import botocore
 from csvkit import sql, table
 
-# Local module imports
-from .utils import get_column_types
-
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ.get('DATA_WAREHOUSE_URL')
@@ -33,6 +30,38 @@ SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 #---------------------------------------
 # Begin helper functions
 #---------------------------------------
+def get_column_types(filepath, headers):
+    # Load the csv and use csvkit's sql.make_table utility 
+    # to infer the datatypes of the columns.
+    f = open(filepath,'r')
+    rdb.set_trace()
+    csv_table = table.Table.from_csv(f, delimiter=',')
+    sql_table = sql.make_table(csv_table)
+
+    for i, column in enumerate(sql_table.columns):
+        # Clean the type and name values
+        raw_type = str(column.type)
+        clean_type = re.sub(r'\(\w+\)', '', raw_type)
+        
+        # Temporary fix for issue #19
+        if raw_type == 'BOOLEAN':
+            raw_type = 'VARCHAR(10)'
+
+        if raw_type == 'DATETIME':
+            # Dumb guess at the maximum length of a datetime field. Find better way?
+            raw_type = 'VARCHAR(100)'
+
+        try:
+            length = column.type.length
+        except AttributeError:
+            length = ''
+
+        headers[i]['datatype'] = clean_type
+        headers[i]['raw_type'] = raw_type
+        headers[i]['length'] = length,
+
+    return headers
+
 def forward(instance, step, message, total):
     step += 1
     instance.update_state(state='PROGRESS', meta={'message': message, 'error': False, 'current': step, 'total': total})
