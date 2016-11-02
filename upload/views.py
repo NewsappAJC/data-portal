@@ -113,8 +113,9 @@ def check_task_status(request):
         'result': response.result
     }
 
-    if request.session['task_type'] == 'tmp' and data['result'] and data['result']['s3_path']:
-        request.session['s3_path'] = data['result']['s3_path']
+    if request.session['task_type'] == 'tmp' and data['result']:
+        if 's3_path' in data['result']:
+            request.session['s3_path'] = data['result']['s3_path']
 
     # If the task is successful, write information about the upload to the Django DB
     if data['status'] == 'SUCCESS' and 'error' not in data['result']:
