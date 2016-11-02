@@ -137,7 +137,7 @@ def get_column_types(filepath, headers):
 #--------------------------------------------
 def write_originals_to_s3():
     # Access S3 bucket using credentials in ~/.aws/credentials
-    session = boto3.Session(profile_name='data_warehouse')
+    session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 

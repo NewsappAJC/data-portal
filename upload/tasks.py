@@ -26,7 +26,9 @@ from .utils import get_column_types
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = os.environ['DATA_WAREHOUSE_URL']
+URL = os.environ.get('DATA_WAREHOUSE_URL')
+ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
+SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 
 #---------------------------------------
 # Begin helper functions
@@ -53,7 +55,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     total = 7
     step = forward(self, 0, 'Downloading data from Amazon S3', total)
 
-    session = boto3.Session(profile_name='data_warehouse')
+    session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
@@ -166,7 +168,7 @@ def write_tempfile_to_s3(self, local_path, table_name):
     """
 
     # Begin session with S3 server using ./aws/credentials file
-    session = boto3.Session(profile_name='data_warehouse')
+    session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
