@@ -52,7 +52,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     and executes a LOAD DATA INFILE query
     to load the csv into it.
     """
-    total = 7
+    total = 8
     step = forward(self, 0, 'Downloading data from Amazon S3', total)
 
     session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)

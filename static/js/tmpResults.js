@@ -8,6 +8,8 @@ $('#file-submit').on('click', function() {
   csrf = data.get('csrfmiddlewaretoken');
 
   postForm(data);
+
+  $('#file-submit').prop('disabled', true);
 });
 
 function postForm(data) {

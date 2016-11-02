@@ -107,7 +107,10 @@ def categorize(request):
 @login_required
 def check_task_status(request):
     params = []
-    p_id = request.session['tmp_id']
+    try:
+        p_id = request.session['tmp_id']
+    except KeyError:
+        p_id = request.session['task_id']
     response = AsyncResult(p_id)
     data = {
         'status': response.status,
@@ -178,6 +181,8 @@ def upload(request):
 
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status
+        del request.session['tmp_id'] # Get rid of tmp task id
+
         headers = request.session['headers']
 
         # Probably needlessly complex logic to set the category for each columns
