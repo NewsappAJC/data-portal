@@ -1,3 +1,43 @@
+var csrf;
+
+// Get data from form
+$('#file-submit').on('click', function() {
+  var data = new FormData();
+
+  $.each($('input'), function() {
+    if (this.files) {
+      var f = this.files[0];
+      data[this.name] = f;
+    }
+    else {
+      data[this.name] = this.value;
+    };
+  });
+
+  // We need to pass the csrf_token as a header don't ask why
+  csrf = data['csrfmiddlewaretoken'];
+  delete data['csrfmiddlewaretoken'];
+
+  postForm(data);
+});
+
+function postForm(data) {
+  $.ajax({
+    url: '/',
+    type: 'POST', 
+    contentType: false,
+    processData: false,
+    headers: {'X-CSRFToken': csrf},
+    data: data,
+    success: function(res) {
+      getResult(checkResponseStatus);
+    },
+    error: function(res) {
+      console.log('request failed')
+    }
+  });
+};
+
 function getResult(cb) {
   $.ajax({
     type: 'GET', 
@@ -49,4 +89,3 @@ function checkResponseStatus(res) {
     }
 }
 
-getResult(checkResponseStatus);

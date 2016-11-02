@@ -49,7 +49,7 @@ def upload_file(request):
 
             with open(path, 'wb+') as f:
                 # Handle uploaded file in chunks so we don't overwhelm the system's memory
-                for i, chunk in enumerate(request.FILES['data_file'].chunks()):
+                for chunk in request.FILES['data_file'].chunks():
                     # Write the first chunk to a sample file that we can use later to 
                     # infer datatype without reading the whole file into memory
                     f.write(chunk)
@@ -72,7 +72,10 @@ def upload_file(request):
             headers = get_column_names(path)
             request.session['headers'] = headers
 
-            return redirect('/tmp-upload/')
+            # Return a blank HTTP Response to the AJAX request to let it know 
+            # the request was successful and the task has started
+            return HttpResponse(status=200)
+
 
     # If request method isn't POST or if the form data is invalid
     return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})

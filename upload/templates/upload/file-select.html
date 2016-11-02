@@ -7,7 +7,6 @@
 
 {% block content %}
 <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
-<em>Note: This tool currently accepts only CSV files, with column headers in the first row. We're working on accepting more file formats</em>
 <div class="row">
 
   <div class="col-sm-3 sidebar">
@@ -40,7 +39,9 @@
 
   <div class="upload-form-holder col-sm-9">
     <div class="page-header"><h3>Upload a CSV</h3></div>
-    <form enctype="multipart/form-data" class="form" action="/" method="post">
+
+    <form enctype="multipart/form-data" class="form" id="upload-form" action="/" method="post">
+    <input type="hidden" name="tempfile" id="tempfile"/>
       {% csrf_token %}
         <div class="row">
           <div class="col-sm-8">
@@ -52,7 +53,7 @@
               {% endfor %}
             </div>
           </div>
-          <div class="col-sm-4">
+          <div class="col-sm-3">
             <div class="form-group">
               <label>{{ form.table_name.label }}</label>
               {{form.table_name}}
@@ -145,10 +146,19 @@
           </div>
         {% endif %}
 
-        <div>
-          <button type="submit" class="btn btn-primary data-submit">Submit</button>
-        </div>
       </form>
+
+      <span id="progress-message"></span>
+      <div class="progress">
+        <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped active" style="min-width: 2em" role='progressbar'></div>
+      </div>
+      <div id="details"></div>
+      <div id="message"></div>
+      <div id="warnings"></div>
+
+      <div>
+        <button id="file-submit" class="btn btn-primary">Submit</button>
+      </div>
 
   </div><!--upload-form-holder-->
 
@@ -159,5 +169,7 @@
   {% endfor %}
 </div>
 {% endif %}
+
+  <script src="{% static "js/tmpResults.js"%}"></script>
 
 {% endblock %}
