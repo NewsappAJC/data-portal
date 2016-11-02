@@ -6,7 +6,6 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.upload_file),
-    url(r'^tmp-upload/$', views.tmp_upload),
     url(r'^categorize/$', views.categorize),
     url(r'^upload/$', views.upload),
     url(r'^check-task-status/$', views.check_task_status),
