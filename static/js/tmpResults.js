@@ -2,6 +2,7 @@ var csrf;
 
 // Get data from form
 $('#file-submit').on('click', function() {
+  $('#progress-holder').show();
   var data = new FormData($('#upload-form')[0]);
 
   csrf = data.get('csrfmiddlewaretoken');
@@ -63,7 +64,7 @@ function checkResponseStatus(res) {
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
       $('#progress-message').html('Finished')
       $('#tempfile').val(res.result.s3_path) // Hold the s3 path in a hidden input so we can pass it to the next view
-      $('#continue').prop('disabled', false);
+      window.location.href = '/categorize/';
 
       return;
     }

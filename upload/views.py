@@ -40,7 +40,6 @@ def upload_file(request):
 
     # Get a list of most recent uploads to display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
-    pdb.set_trace()
 
     if request.method == 'POST':
         if form.is_valid():
@@ -68,7 +67,7 @@ def upload_file(request):
 
             # Begin writing temp file to S3 so that we can access it later
             task = write_tempfile_to_s3.delay(path, table_name)
-            request.session['task_id'] = task.id
+            request.session['tmp_id'] = task.id
 
             headers = get_column_names(path)
             request.session['headers'] = headers
@@ -88,19 +87,15 @@ def upload_file(request):
 #------------------------------------#
 @login_required
 def categorize(request):
-    if request.method == 'POST':
-        # Save the path to temp resource on S3 for use later
-        request.session['s3_path'] = request.POST['tempfile']
+    # Save the path to temp resource on S3 for use later
 
-        context = {
-            'headers': request.session['headers'],
-            'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
-            'datatypes': Column.MYSQL_TYPE_CHOICES
-        }
+    context = {
+        'headers': request.session['headers'],
+        'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+        'datatypes': Column.MYSQL_TYPE_CHOICES
+    }
 
-        return render(request, 'upload/categorize.html', context)
-
-    return redirect('/')
+    return render(request, 'upload/categorize.html', context)
 
 
 #----------------------------------------------------#
@@ -112,12 +107,16 @@ def categorize(request):
 @login_required
 def check_task_status(request):
     params = []
-    p_id = request.session['task_id']
+    p_id = request.session['tmp_id']
     response = AsyncResult(p_id)
     data = {
         'status': response.status,
         'result': response.result
     }
+    try:
+        request.session['s3_path'] = data['result']['s3_path']
+    except KeyError, TypeError:
+        pass
 
     # If the task is successful, write information about the upload to the Django DB
     #if data['status'] == 'SUCCESS' and not data['result']['error']:
