@@ -40,6 +40,7 @@ def upload_file(request):
 
     # Get a list of most recent uploads to display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
+    pdb.set_trace()
 
     if request.method == 'POST':
         if form.is_valid():

@@ -164,8 +164,10 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 @shared_task(bind=True)
 def write_tempfile_to_s3(self, local_path, table_name):
     """
-    Write a temporary file to the S3 server.
+    Write a temporary file to the S3 server. Used to upload a data file so that
+    we can later download it and execute LOAD DATA INFILE on it
     """
+    rdb.set_trace()
 
     # Begin session with S3 server using ./aws/credentials file
     session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)

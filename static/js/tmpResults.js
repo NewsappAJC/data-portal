@@ -2,21 +2,9 @@ var csrf;
 
 // Get data from form
 $('#file-submit').on('click', function() {
-  var data = new FormData();
+  var data = new FormData($('#upload-form')[0]);
 
-  $.each($('input'), function() {
-    if (this.files) {
-      var f = this.files[0];
-      data[this.name] = f;
-    }
-    else {
-      data[this.name] = this.value;
-    };
-  });
-
-  // We need to pass the csrf_token as a header don't ask why
-  csrf = data['csrfmiddlewaretoken'];
-  delete data['csrfmiddlewaretoken'];
+  csrf = data.get('csrfmiddlewaretoken');
 
   postForm(data);
 });
@@ -27,6 +15,7 @@ function postForm(data) {
     type: 'POST', 
     contentType: false,
     processData: false,
+    cache: false,
     headers: {'X-CSRFToken': csrf},
     data: data,
     success: function(res) {
