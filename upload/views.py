@@ -107,22 +107,24 @@ def categorize(request):
 @login_required
 def check_task_status(request):
     params = []
-    try:
+
+    if 'tmp_id' in request.session:
         p_id = request.session['tmp_id']
-    except KeyError, TypeError:
+    elif 'task_id' in request.session:
         p_id = request.session['task_id']
+
     response = AsyncResult(p_id)
     data = {
         'status': response.status,
         'result': response.result
     }
-    try:
+
+    if data['result'] and 's3_path' in data['result']:
         request.session['s3_path'] = data['result']['s3_path']
-    except KeyError, TypeError:
-        pass
 
     # If the task is successful, write information about the upload to the Django DB
-    #if data['status'] == 'SUCCESS' and not data['result']['error']:
+    if data['status'] == 'SUCCESS' and 'error' not in data['result']:
+        del request.session['task_id']
     #    # Create a table object in the Django DB
     #    params = request.session['table_params']
     #    t = Table(
