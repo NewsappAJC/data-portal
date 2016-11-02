@@ -34,7 +34,6 @@ def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
     f = open(filepath,'r')
-    rdb.set_trace()
     csv_table = table.Table.from_csv(f, delimiter=',')
     sql_table = sql.make_table(csv_table)
 
