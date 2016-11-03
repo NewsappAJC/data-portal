@@ -26,15 +26,15 @@ from .utils import get_column_names, write_tempfile_to_s3
 from upload.tasks import load_infile
 
 
-#------------------------------------#
-# Take file uploaded by user, use
-# csvkit to generate a DB schema, and write
-# to an SQL table. Copy file and related 
-# information to S3 bucket.
-#------------------------------------#
 # TODO accept more than one file
 @login_required
 def upload_file(request):
+    """
+    Take file uploaded by user, use
+    csvkit to generate a DB schema, and write
+    to an SQL table. Copy file and related 
+    information to S3 bucket.
+    """
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
 
@@ -76,19 +76,28 @@ def upload_file(request):
             # the request was successful and the task has started
             return HttpResponse(status=200)
 
+        else:
+            # Setting safe to False is necessary to allow non-dict objects to be serialized.
+            # To prevent XSS attacks make sure to escape the results on client side.
+            # See https://docs.djangoproject.com/en/1.10/ref/forms/api/#django.forms.Form.errors.as_json
+            # More about serializing non-dict objects: https://docs.djangoproject.com/en/1.10/ref/request-response/#serializing-non-dictionary-objects
+            return JsonResponse(
+                form.errors.as_json(escape_html=True),
+                status=400,
+                safe=False
+            )
+
 
     # If request method isn't POST or if the form data is invalid
     return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})
 
-#------------------------------------#
-# Prompt the user to select categories
-# for each column in the data, then
-# begin upload task
-#------------------------------------#
 @login_required
 def categorize(request):
-    # Save the path to temp resource on S3 for use later
-
+    """
+    Prompt the user to select categories
+    for each column in the data, then
+    begin upload task
+    """
     context = {
         'headers': request.session['headers'],
         'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
@@ -98,14 +107,14 @@ def categorize(request):
     return render(request, 'upload/categorize.html', context)
 
 
-#----------------------------------------------------#
-# Poll to check the completion status of celery 
-# task. If task has succeeded, return a sample of the
-# data, and write metadata about upload to Django DB. 
-# If failed, return error message.
-#----------------------------------------------------#
 @login_required
 def check_task_status(request):
+    """
+    Poll to check the completion status of celery 
+    task. If task has succeeded, return a sample of the
+    data, and write metadata about upload to Django DB. 
+    If failed, return error message.
+    """
     p_id = request.session['task_id']
     response = AsyncResult(p_id)
     data = {
@@ -114,7 +123,8 @@ def check_task_status(request):
     }
 
     # If the task is successful, write information about the upload to the Django DB
-    if data['status'] == 'SUCCESS' and 'error' not in data['result']:
+    if data['status'] == 'SUCCESS' and not data['result']['error']:
+        pdb.set_trace()
         # Create a table object in the Django DB
         params = request.session['table_params']
         t = Table(
@@ -150,9 +160,10 @@ def check_task_status(request):
 
 @login_required
 def upload(request):
-    # Begin load data infile query as a separate task so it doesn't slow response
-    # load_infile accepts the following arguments:
-    # (s3_path, db_name, table_name, columns)
+    """
+    Download a file from S3 to the /tmp directory, then execute a LOAD
+    DATA INFILE statement to push it to the MySQL server
+    """
     if request.method == 'POST':
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         # Have to validate manually bc can't use a Django form class for a dynamically
@@ -167,6 +178,9 @@ def upload(request):
         fparams['columns'] = request.session['headers']
         fparams['s3_path'] = request.session['s3_path']
 
+        # Begin load data infile query as a separate task so it doesn't slow response
+        # load_infile accepts the following arguments:
+        # (s3_path, db_name, table_name, columns)
         task = load_infile.delay(**fparams)
         request.session['task_id'] = task.id # Use the id to poll Redis for task status
         request.session['task_type'] = 'final'
@@ -182,10 +196,10 @@ def upload(request):
 
     return redirect('/')
 
-#------------------------------------#
-# Log a user out
-#------------------------------------#
 def logout_user(request):
+    """
+    Log a user out
+    """
     logout(request)
     messages.add_message(request, messages.ERROR, 'You have been logged out')
     return redirect('/login/')

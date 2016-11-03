@@ -48,18 +48,14 @@
             <div class="form-group">
               <label>{{ form.data_file.label }}</label>
               {{form.data_file}}
-              {% for error in form.data_file.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
           <div class="col-sm-3">
             <div class="form-group">
               <label>{{ form.table_name.label }}</label>
               {{form.table_name}}
-              {% for error in form.table_name.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
           <div style="clear:both;"></div>
@@ -69,9 +65,7 @@
               <div class="form-group">
                 <label>{{ form.db_select.label }}</label>
                 {{form.db_select}}
-                {% for error in form.db_select.errors %}
-                  <div class="error">{{ error }}</div>
-                {% endfor %}
+                <div class="errors"></div>
               </div>
             </div>
             <div class="col-sm-1 or">
@@ -81,9 +75,7 @@
               <div class="form-group">
                 <label>{{ form.db_input.label }}</label>
                 {{form.db_input}}
-                {% for error in form.db_input.errors %}
-                  <div class="error">{{ error }}</div>
-                {% endfor %}
+                <div class="errors"></div>
               </div>
             </div>
             <!--To give the db-holder dimensions-->
@@ -94,18 +86,14 @@
             <div class="form-group">
               <label>{{ form.topic.label }}</label>
               {{form.topic}}
-              {% for error in form.topic.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
           <div class="col-sm-6">
             <div class="form-group">
               <label>{{ form.source.label }}</label>
               {{form.source}}
-              {% for error in form.source.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
 
@@ -113,18 +101,14 @@
             <div class="form-group">
               <label>{{ form.press_contact.label }}</label>
               {{form.press_contact}}
-              {% for error in form.press_contact.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
           <div class="col-sm-4">
             <div class="form-group">
               <label>{{ form.press_contact_number.label }}</label>
               {{form.press_contact_number}}
-              {% for error in form.press_contact_number.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
 
@@ -132,21 +116,15 @@
             <div class="form-group">
               <label>{{ form.press_contact_email.label }}</label>
               {{form.press_contact_email}}
-              {% for error in form.press_contact_email.errors %}
-                <div class="error">{{ error }}</div>
-              {% endfor %}
+              <div class="errors"></div>
             </div>
           </div>
 
         </div>
 
-        {% if form.non_field_errors %}
-          <div class="error">
-            {{ form.non_field_errors }}
-          </div>
-        {% endif %}
-
       </form>
+
+      <div id="non-field-errors" class="errors"></div>
 
       <div>
         <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary">Submit</button>
