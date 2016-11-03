@@ -124,7 +124,6 @@ def check_task_status(request):
 
     # If the task is successful, write information about the upload to the Django DB
     if data['status'] == 'SUCCESS' and not data['result']['error']:
-        pdb.set_trace()
         # Create a table object in the Django DB
         params = request.session['table_params']
         t = Table(
