@@ -20,10 +20,10 @@ from celery.result import AsyncResult
 # Local imports
 from .forms import DataForm
 from .models import Column, Table, Contact
-from .utils import get_column_names
+from .utils import get_column_names, write_tempfile_to_s3
 # Have to do an absolute import here for celery. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
-from upload.tasks import load_infile, write_tempfile_to_s3
+from upload.tasks import load_infile
 
 
 #------------------------------------#
@@ -64,10 +64,10 @@ def upload_file(request):
             # Begin writing temp file to S3 so that we can access it later
             inputf.seek(0)
             uploaded = inputf.read()
-            task = write_tempfile_to_s3.delay(uploaded, table_name)
 
-            request.session['task_type'] = 'tmp'
-            request.session['task_id'] = task.id
+            # Write the CSV to a temporary file in the Amazon S3 bucket that 
+            # we will retrieve later before uploading to the MySQL server
+            request.session['s3_path'] = write_tempfile_to_s3(path, table_name)
 
             headers = get_column_names(path)
             request.session['headers'] = headers
@@ -113,42 +113,37 @@ def check_task_status(request):
         'result': response.result
     }
 
-    if request.session['task_type'] == 'tmp' and data['result']:
-        if 's3_path' in data['result']:
-            request.session['s3_path'] = data['result']['s3_path']
-
     # If the task is successful, write information about the upload to the Django DB
     if data['status'] == 'SUCCESS' and 'error' not in data['result']:
-        pass
-    #    # Create a table object in the Django DB
-    #    params = request.session['table_params']
-    #    t = Table(
-    #        table=params['table_name'],
-    #        database=params['db_name'],
-    #        topic=params['topic'],
-    #        user=request.user,
-    #        source=params['source'],
-    #        upload_log=data['result']['warnings']
-    #    )
-    #    t.save()
+        # Create a table object in the Django DB
+        params = request.session['table_params']
+        t = Table(
+            table=params['table_name'],
+            database=params['db_name'],
+            topic=params['topic'],
+            user=request.user,
+            source=params['source'],
+            upload_log=data['result']['warnings']
+        )
+        t.save()
 
-    #    # Create column objects for each column in the table
-    #    # Some of the data about each column is held in session storage,
-    #    # some is returned by the task. Both store the columns in the same order.
-    #    session_headers = request.session['headers']
-    #    for i, header in enumerate(data['result']['headers']):
-    #        c = Column(table=t, 
-    #            column=session_headers[i]['name'],
-    #            mysql_type=header['datatype'],
-    #            information_type=session_headers[i]['category'],
-    #            column_size=header['length']
-    #        )
-    #        c.save()
+        # Create column objects for each column in the table
+        # Some of the data about each column is held in session storage,
+        # some is returned by the task. Both store the columns in the same order.
+        session_headers = request.session['headers']
+        for i, header in enumerate(data['result']['headers']):
+            c = Column(table=t, 
+                column=session_headers[i]['name'],
+                mysql_type=header['datatype'],
+                information_type=session_headers[i]['category'],
+                column_size=header['length']
+            )
+            c.save()
 
-    try:
-        return JsonResponse(data)
     # If response isn't JSON serializable it's an error message. Convert it to
     # a string and return that instead
+    try:
+        return JsonResponse(data)
     except TypeError:
         data['result'] = str(data['result'])
         return JsonResponse(data)

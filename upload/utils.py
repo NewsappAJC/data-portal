@@ -106,7 +106,11 @@ def get_column_names(filepath):
 #--------------------------------------------
 def write_originals_to_s3():
     # Access S3 bucket using credentials in ~/.aws/credentials
-    session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
+    session = boto3.Session(
+        aws_access_key_id=settings.AWS_ACCESS_KEY, 
+        aws_secret_access_key=settings.AWS_SECRET_KEY
+    )
+
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
@@ -145,4 +149,37 @@ def write_originals_to_s3():
 
     logging.info('File written to S3 bucket')
     return
+
+def write_tempfile_to_s3(local_path, table_name):
+    """
+    Write a temporary file to the S3 server. Used to upload a data file so that
+    we can later download it and execute LOAD DATA INFILE on it
+    """
+    # Begin session with S3 server using ./aws/credentials file
+    session = boto3.Session(
+        aws_access_key_id=settings.AWS_ACCESS_KEY,
+        aws_secret_access_key=settings.AWS_SECRET_KEY
+    )
+    s3 = session.resource('s3')
+    bucket = s3.Bucket(BUCKET_NAME)
+
+    total = 3
+    s = 0
+
+    # Check if a file with the same name already exists in the
+    # S3 bucket, and if so change the name of the upload and try again
+    while True:
+        s3_path = 'tmp/{name}({s})'.format(name=table_name, s=s)
+
+        try:
+            bucket.download_file(s3_path, '/tmp/s3_throwaway')
+            s += 1
+            continue
+
+        except botocore.exceptions.ClientError:
+            break
+
+    bucket.upload_file(local_path, s3_path)
+
+    return s3_path
 

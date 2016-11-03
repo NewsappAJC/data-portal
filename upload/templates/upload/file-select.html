@@ -148,18 +148,8 @@
 
       </form>
 
-      <div id="progress-holder" style="display:none;">
-        <span id="progress-message">Uploading file to Amazon S3</span>
-        <div class="progress">
-          <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped active" style="min-width: 2em" role='progressbar'></div>
-        </div>
-        <div id="details"></div>
-        <div id="message"></div>
-        <div id="warnings"></div>
-      </div>
-
       <div>
-        <button id="file-submit" class="btn btn-primary">Submit</button>
+        <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary">Submit</button>
       </div>
 
   </div><!--upload-form-holder-->
