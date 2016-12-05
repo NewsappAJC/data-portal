@@ -21,19 +21,16 @@ from celery.result import AsyncResult
 from .forms import DataForm
 from .models import Column, Table, Contact
 from .utils import get_column_names, write_tempfile_to_s3
-# Have to do an absolute import here for celery. See
+# Have to do an absolute import here because of how celery resolves paths. See
 # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
 from upload.tasks import load_infile
 
 
-# TODO accept more than one file
 @login_required
 def upload_file(request):
     """
-    Take file uploaded by user, use
-    csvkit to generate a DB schema, and write
-    to an SQL table. Copy file and related 
-    information to S3 bucket.
+    Take file uploaded by user, use csvkit to generate a DB schema, and write 
+    to an SQL table. Copy file and related information to S3 bucket.
     """
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
@@ -45,14 +42,15 @@ def upload_file(request):
         if form.is_valid():
             inputf = request.FILES['data_file']
             table_name = form.cleaned_data['table_name']
-            # Write the file to a path in the /tmp directory for manipulation later
+            # Write the file to a path in the /tmp directory for upload to S3
             path = '/tmp/{}.csv'.format(table_name)
             with open(path, 'wb+') as f:
+                # Use chunks so as not to overflow system memory
                 for chunk in inputf.chunks():
                     f.write(chunk)
 
             # Store the table config in session storage so that other views can
-            # access it.
+            # access it later.
             db_name = form.cleaned_data['db_input'] or form.cleaned_data['db_select']
             request.session['table_params'] = {
                 'topic': form.cleaned_data['topic'],
@@ -72,8 +70,8 @@ def upload_file(request):
             headers = get_column_names(path)
             request.session['headers'] = headers
 
-            # Return a blank HTTP Response to the AJAX request to let it know 
-            # the request was successful and the task has started
+            # Return an empty HTTP Response to the AJAX request to let it know
+            # the request was successful.
             return HttpResponse(status=200)
 
         else:
@@ -87,15 +85,14 @@ def upload_file(request):
                 safe=False
             )
 
-
-    # If request method isn't POST or if the form data is invalid
+    # If request method isn't POST or if the form data is invalid render the
+    # homepage
     return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})
 
 @login_required
 def categorize(request):
     """
-    Prompt the user to select categories
-    for each column in the data, then
+    Prompt the user to select categories for each column in the data, then
     begin upload task
     """
     context = {
@@ -110,9 +107,8 @@ def categorize(request):
 @login_required
 def check_task_status(request):
     """
-    Poll to check the completion status of celery 
-    task. If task has succeeded, return a sample of the
-    data, and write metadata about upload to Django DB. 
+    Poll to check the completion status of celery task. If task has succeeded,
+    return a sample of the data, and write metadata about upload to Django DB.
     If failed, return error message.
     """
     p_id = request.session['task_id']
@@ -122,7 +118,8 @@ def check_task_status(request):
         'result': response.result
     }
 
-    # If the task is successful, write information about the upload to the Django DB
+    # If the task is successful, write information about the upload to the Django 
+    # DB. Find a way to make sure this database reflects changes to the 
     if data['status'] == 'SUCCESS' and not data['result']['error']:
         # Create a table object in the Django DB
         params = request.session['table_params']
@@ -164,29 +161,33 @@ def upload(request):
     DATA INFILE statement to push it to the MySQL server
     """
     if request.method == 'POST':
+        # We don't want to create a column for the csrf token so strip it out
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
-        # Have to validate manually bc can't use a Django form class for a dynamically
-        # generated form
+        # Have to validate manually because we can't use a Django form class 
+        # for a dynamically generated form. We force user to select a category 
+        # for every header
         if len(keys) < len(request.session['headers']):
             messages.add_message(request, messages.ERROR, 'Please select a category for every column')
             return redirect('/categorize/')
 
-        # Have to do this instead of using form class bc fields are dynamically generated
         params = request.session['table_params']
-        fparams = {key: value for key, value in params.items()}
-        fparams['columns'] = request.session['headers']
-        fparams['s3_path'] = request.session['s3_path']
+        cparams = {key: value for key, value in params.items()}
+        cparams['columns'] = request.session['headers']
+        cparams['s3_path'] = request.session['s3_path']
 
         # Begin load data infile query as a separate task so it doesn't slow response
         # load_infile accepts the following arguments:
         # (s3_path, db_name, table_name, columns)
-        task = load_infile.delay(**fparams)
-        request.session['task_id'] = task.id # Use the id to poll Redis for task status
+        task = load_infile.delay(**cparams)
+
+        # We will use the id to poll Redis for task status in the
+        # check_task_status view
+        request.session['task_id'] = task.id
         request.session['task_type'] = 'final'
 
         headers = request.session['headers']
 
-        # Probably needlessly complex logic to set the category for each columns
+        # Get the index of each column header and set the appropriate category
         for key in keys:
             hindex = [i for i, val in enumerate(headers) if headers[i]['name'] == key][0]
             headers[hindex]['category'] = request.POST[key]
