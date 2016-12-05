@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'django_extensions',
+    'haystack',
     # Local apps
     'upload',
     'search'
@@ -135,10 +136,20 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
 
+# Haystack
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://127.0.0.1:9200/',
+        'INDEX_NAME': 'haystack'
+    }
+}
+
 # Celery
 BROKER_URL = os.environ.get('REDIS_URL')
 CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
 
-#AWS
+# AWS
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 AWS_SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
+

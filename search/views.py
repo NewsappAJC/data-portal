@@ -8,7 +8,9 @@ import os
 engine = create_engine(os.environ['DATA_WAREHOUSE_URL'])
 connection = engine.connect()
 
+"""
 def search(request):
+    # Can't use something as simple as icontains
     if request.method == 'POST':
         query = request.POST.get('name_query', None)
             
@@ -17,4 +19,6 @@ def search(request):
         return render(request, 'search-results.html', {'results': results})
         
     else:
-        return render(request, 'search.html')
+        return render(request, 'search/search.html')
+"""
+

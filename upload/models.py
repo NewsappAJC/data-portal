@@ -3,16 +3,16 @@ from __future__ import unicode_literals
 from django.db import models
 from django.contrib.auth.models import User
 
-# Create your models here.
 class Table(models.Model):
     user = models.ForeignKey(User)
-    database = models.CharField(max_length=300, blank=False, null=False)
-    table = models.CharField(max_length=300, blank=False, null=False)
-    topic = models.CharField(max_length=300, blank=True, null=True)
+    database = models.CharField(max_length=300)
+    table = models.CharField(max_length=300)
+    topic = models.CharField(max_length=300, blank=True)
     upload_time = models.DateTimeField(auto_now_add=True)
     upload_log = models.TextField(blank=True)
     source = models.CharField(max_length=300, blank=False, null=False)
-    next_update = models.DateField(blank=True, null=True)
+    next_update = models.DateField(blank=True)
+
 
 class Column(models.Model):
     INFORMATION_TYPE_CHOICES = (
@@ -53,6 +53,7 @@ class Column(models.Model):
     mysql_type = models.CharField(choices=MYSQL_TYPE_CHOICES, max_length=300, blank=False, null=False)
     column_size = models.CharField(max_length=10, null=True)
     information_type = models.CharField(choices=INFORMATION_TYPE_CHOICES, max_length=30, blank=True, null=True)
+
 
 class Contact(models.Model):
     CONTACT_TYPE_CHOICES = (
