@@ -30,7 +30,7 @@ from upload.tasks import load_infile
 def upload_file(request):
     """
     Take file uploaded by user, use csvkit to generate a DB schema, and write 
-    to an SQL table. Copy file and related information to S3 bucket.
+    to an SQL table. Copy file and metadata to s3.
     """
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
@@ -58,10 +58,6 @@ def upload_file(request):
                 'source': form.cleaned_data['source'],
                 'table_name': table_name,
             }
-
-            # Begin writing temp file to S3 so that we can access it later
-            inputf.seek(0)
-            uploaded = inputf.read()
 
             # Write the CSV to a temporary file in the Amazon S3 bucket that 
             # we will retrieve later before uploading to the MySQL server
@@ -124,8 +120,9 @@ def check_task_status(request):
         # Create a table object in the Django DB
         params = request.session['table_params']
         t = Table(
-            table=params['table_name'],
-            database=params['db_name'],
+            table=data['result']['table'],
+            url=data['result']['url'],
+            database=params['db'],
             topic=params['topic'],
             user=request.user,
             source=params['source'],
@@ -155,7 +152,7 @@ def check_task_status(request):
         return JsonResponse(data)
 
 @login_required
-def upload(request):
+def write_to_db(request):
     """
     Download a file from S3 to the /tmp directory, then execute a LOAD
     DATA INFILE statement to push it to the MySQL server
