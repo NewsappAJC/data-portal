@@ -16,25 +16,53 @@ import botocore
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 
-#remove quote chars csvkit puts around capitalized column names, change engine to MYISAM
-#if routine errors occur, use this to modify the create table statement
-#deprecate when we start interactively handling field types
-def polish_create_table(create_table):
-    create_table=create_table.replace('"','')
-    
-    create_table=create_table.replace(");",")ENGINE=MYISAM;")
-    
-    return create_table
-
 
 #--------------------------------------------
 # Helper functions
 #--------------------------------------------
+def start_s3_session():
+    """
+    Use boto3 to start an s3 session
+    """
+    session = boto3.Session(
+        aws_access_key_id=settings.AWS_ACCESS_KEY,
+        aws_secret_access_key=settings.AWS_SECRET_KEY
+    )
+
+    s3 = session.resource('s3')
+
+    return s3
+
+def check_duplicates(key, i=0):
+    """
+    Check if a key already exists in S3. If it does, generate a new key and
+    return it
+    """
+    try:
+        # Boto3 doesn't have a method to check if a given key already exists.
+        # Trying to get metadata and catching the resulting ClientError
+        # is the least expensive way to do it
+        client = boto3.client('s3', 
+            aws_access_key_id=settings.AWS_ACCESS_KEY,
+            aws_secret_access_key=settings.AWS_SECRET_KEY)
+
+        client.head_object(Bucket=BUCKET_NAME, Key=key)
+
+        # If the key already exists, call the function again with a different
+        # suffix
+        check_duplicates(key + str(i), i + 1)
+    except botocore.exceptions.ClientError:
+        return key
+
 def clean(names):
+    """
+    Parse non-alphanumeric symbols out of headers, and append a number
+    to the end of the column name in the case of duplicates
+    """
     preexisting = [] # Will keep track of duplicate column names
-    clean_names = [] # Will hold all our column names
+    clean_names = [] # Will hold sanitized column names
     for name in names:
-        # Append a number to a column if that column name already exists in the table
+        # Append a number to a column name if it already exists in the table
         if name in preexisting:
             preexisting.append(name)
             c = preexisting.count(name) - 1
@@ -53,19 +81,16 @@ def clean(names):
         clean_names.append(clean_name.lower()[:60])
 
     return clean_names
-
 #--------------------------------------------
 # End helper functions
 #--------------------------------------------
 
-#--------------------------------------------
-# Get column names and sample data from a CSV
-# without loading the whole csv into memory
-# for display by the categorize view
-#--------------------------------------------
 def get_column_names(filepath):
+    """
+    Get column names and sample data from a CSV without loading the whole csv 
+    into memory for display by the categorize view
+    """
     sample_rows = []
-
     with open(filepath, 'r') as f:
         # Loop through lines to avoid reading the entire file into memory
         for i, line in enumerate(f):
@@ -83,7 +108,7 @@ def get_column_names(filepath):
     # Clean the column names to prevent SQL injection
     headers = [{'name': column, 'sample_data': []} for column in clean(columns)]
 
-    # Give each header
+    # Append the sample data to the header objects
     for sample_row in sample_rows:
         for i in range(len(sample_row)):
             headers[i]['sample_data'].append(str(sample_row[i]))
@@ -94,91 +119,68 @@ def get_column_names(filepath):
 
     return headers
 
+def copy_final_s3(tmp_path, db_name, table_name):
+    """
+    Copy the original CSV file from the tmp bucket to its permanent home on s3
+    """
+    s3 = start_s3_session()
 
-#--------------------------------------------
-# Infer datatypes of the columns in a csv and
-# return a list of dicts with the columns names,
-# length, and type
-#--------------------------------------------
-#--------------------------------------------
-# Write the original CSV to s3. The s3 task will
-# load the data from s3
-#--------------------------------------------
-def write_originals_to_s3():
-    # Access S3 bucket using credentials in ~/.aws/credentials
-    session = boto3.Session(
-        aws_access_key_id=settings.AWS_ACCESS_KEY, 
-        aws_secret_access_key=settings.AWS_SECRET_KEY
-    )
-
-    s3 = session.resource('s3')
-    bucket = s3.Bucket(BUCKET_NAME)
-
-    # Check if a file with the same name already exists in the
-    # S3 bucket, and if so throw an error
-    try:
-        bucket.download_file(table_name, '/tmp/s3_test_file')
-        messages.add_message(request, messages.ERROR, 'A file with that name already exists in s3')
-        return render(request, 'upload.html', {'form': form})
-    except botocore.exceptions.ClientError:
-        pass
-
-    # Write the file to Amazon S3
-    bucket.put_object(Key='{db_name}/{today}-{table}/original/{filename}.csv'.format(
+    # Compose a key name
+    stem = '{db_name}/{table}-{today}'.format(
         db_name = db_name, 
-        today = date.today().isoformat(),
         table = table_name,
-        filename = table_name), Body=fcontent)
+        today = date.today().isoformat())
 
-    # Generate a README file
-    readme_template = open(os.path.join(settings.BASE_DIR, 'readme_template'), 'r').read()
-    readme = readme_template.format(topic=topic.upper(), 
-            div='=' * len(topic),
-            reporter=reporter_name, 
-            aq=next_aquisition, 
-            owner=owner, 
-            contact=press_contact,
-            number=press_contact_number,
-            email=press_contact_email)
+    temp_path = '{stem}/original/{table}.csv'.format(
+        stem = stem,
+        table = table_name)
 
+    # Check if a directory with the same name already exists in the
+    # S3 bucket, and if so change the key.
+    unique_stem = check_duplicates(temp_path)
+    
+    final_path = '{stem}/original/{table}.csv'.format(
+        stem = unique_stem,
+        table = table_name)
+
+    # Write the file to Amazon S3 and delete the file in tmp/
+    s3.Object(BUCKET_NAME, full_path).copy_from(CopySource=tmp_path)
+    # s3.Object(BUCKET_NAME, tmp_path).delete()
+
+    ## Generate a README file
+    #readme_template = open(os.path.join(settings.BASE_DIR,
+    #    config, 'readme_template'), 'r').read()
+
+    #readme = readme_template.format(topic=topic.upper(),
+    #    div='=' * len(topic),
+    #    reporter=reporter_name,
+    #    aq=next_aquisition,
+    #    owner=owner,
+    #    contact=press_contact,
+    #    number=press_contact_number,
+    #    email=press_contact_email)
+    #
     # Write the README to the S3 bucket
-    bucket.put_object(Key='{db_name}/{today}-{table}/README.txt'.format(
-        db_name = db_name, 
-        today = date.today().isoformat(),
-        table = table_name), Body=readme)
+    # bucket.put_object(Key='{stem}/README.txt'.format(unique_stem), Body=readme)
 
-    logging.info('File written to S3 bucket')
-    return
+    logging.info('File successfully written to S3')
+
+    # Generate a presigned URL so that reporters who don't have access to the
+    # AWS account can still access the data
+    p = {'Bucket': BUCKET_NAME, 'Key': full_path}
+    url = s3.generate_presigned_url(ClientMethod='get_object', Params=p)
+
+    return url
 
 def write_tempfile_to_s3(local_path, table_name):
     """
-    Write a temporary file to the S3 server. Used to upload a data file so that
-    we can later download it and execute LOAD DATA INFILE on it
+    Write a temporary file to the S3 server. Use it later to execute LOAD DATA 
+    INFILE
     """
-    # Begin session with S3 server using ./aws/credentials file
-    session = boto3.Session(
-        aws_access_key_id=settings.AWS_ACCESS_KEY,
-        aws_secret_access_key=settings.AWS_SECRET_KEY
-    )
-    s3 = session.resource('s3')
+    s3 = start_s3_session()
     bucket = s3.Bucket(BUCKET_NAME)
 
-    total = 3
-    s = 0
-
-    # Check if a file with the same name already exists in the
-    # S3 bucket, and if so change the name of the upload and try again
-    while True:
-        s3_path = 'tmp/{name}({s})'.format(name=table_name, s=s)
-
-        try:
-            bucket.download_file(s3_path, '/tmp/s3_throwaway')
-            s += 1
-            continue
-
-        except botocore.exceptions.ClientError:
-            break
-
+    s3_path = check_duplicates('tmp/{name}')
     bucket.upload_file(local_path, s3_path)
 
     return s3_path
