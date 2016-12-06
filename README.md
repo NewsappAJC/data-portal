@@ -20,29 +20,29 @@ $ pip install -r requirements.txt
 *ENVIRONMENTAL VARIABLES*
 This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. To establish these connections it's necessary to set a few environmental variables. All the necessary variables are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script. 
 
-* DATABASE_URL 
+* DATABASE_URL
+
+  This is the address of the MySQL server where Django will store metadata about each upload.
   
   Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
 
-  Purpose: The address of the MySQL server where Django will store metadata about each upload.
+* DATA_WAREHOUSE_URL
 
-* DATA_WAREHOUSE_URL 
+  This is the server where you want uploaded files to live. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. For safety, this account should have permissions restricted to "CREATE."
 
   Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
 
-  Purpose: The server where you want uploaded files to live. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. For safety, this account should have permissions restricted to "CREATE."
-
 * REDIS_URL
+
+  This is the Redis datastore is a broker that handles messages to and from the Celery worker process.
 
   Format: Varies. If you're using Heroku's Redis add-on, get the url by running `heroku config | grep REDIS`
 
-  Purpose: The Redis datastore is a broker that handles messages to and from the Celery worker process.
-
 * S3_BUCKET
 
-  Format: `ajc-news-apps`
+  This is the bucket where the original datafiles will live.
 
-  Purpose: The bucket where the original datafiles will live.
+  Format: `ajc-data-warehouse`
 
 * AWS_ACCESS_KEY, AWS_SECRET_KEY
 
