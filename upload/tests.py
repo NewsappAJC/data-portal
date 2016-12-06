@@ -1,41 +1,62 @@
+# Standard library imports
 import random
 import csv
+from mock import Mock
 
+# Django imports
 from django.test import TestCase, Client
-from upload.tasks import load_infile
+from django.core.files import File
+from django.urls import reverse
+from django.contrib.auth.models import User
 
-class CeleryTaskTestCase(TestCase):
-    def test_upload_works(self):
-        test_dict = {'name': 'Jonathan', 'age': 24, 'occupation': 'developer'}
-        path = '/tmp/django_import_test.csv'
+# Local module imports
+from .tasks import load_infile
+from .forms import DataForm
 
-        with open(path, 'w') as f:
-            w = csv.DictWriter(f, test_dict.keys())
-            w.writeheader()
-            w.writerow(test_dict)
+#----------------------------------------------------------------
+# Form tests
+#----------------------------------------------------------------
+#class DataFormTestCase(TestCase):
+#    def TestFormValid(self):
+#        test_data = {
+#            table_name: 'voter_dist_data_2016',
+#            db_select: 'user_jcox',
+#            source: 'Secretary of State',
+#            topic: 'Elections',
+#            press_contact: 'Secretary of State Dude',
+#            press_contact_email: 'secretary@secretary.com',
+#            press_contact_number: '123 456 7890',
+#        }
+#
+#        # Generate a mock file for testing purposes.
+#        test_file = Mock(spec=File)
+#
+#        form = DataForm(test_data, test_file)
+#        assert form.is_valid()
 
-        random_table = 'test'.format(int(random.random() * 1000))
-        response = load_infile(db_name='user_cox',
-            table_name=random_table,
-            path='/Users/jcox/test7.csv', 
-            delimiter=','
-        )
-        print 'task.py returned ', response
-
+#----------------------------------------------------------------
+# View tests
+#----------------------------------------------------------------
 class UploadFileViewTestCase(TestCase):
-    def test_file_upload_view_works(self):
-        test_dict = {'name': 'Jonathan', 'age': 24, 'occupation': 'developer'}
-        path = '/tmp/django_import_test.csv'
+    def setUp(self):
+        self.user = User.objects.create_user(username='jonathan',
+            email='jonathan.cox.c@gmail.com',
+            password='top_secret')
 
-        with open(path, 'w') as f:
-            w = csv.DictWriter(f, test_dict.keys())
-            w.writeheader()
-            w.writerow(test_dict)
+    def test_index_view_get(self):
+        """
+        Test that the index page loads and populates the list of databases in 
+        the form
+        """
+        # Have to set a user or it will redirect to login/
+        self.client.login(username='jonathan', password='top_secret')
 
-        random_table = 'test{}'.format(int(random.random() * 1000))
-        response = load_infile(db_name='user_cox',
-            table_name=random_table,
-            path='/Users/jcox/test7.csv', 
-            delimiter=','
-        )
-        print 'task.py returned ', response
+        response = self.client.get(reverse('upload:index'))
+        print 'Trying to get URL: ', reverse('upload:index')
+        self.assertEqual(response.status_code, 200)
+
+
+#----------------------------------------------------------------
+# S3 tests
+#----------------------------------------------------------------
+
