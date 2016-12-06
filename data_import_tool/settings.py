@@ -85,8 +85,10 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 
 DATABASES = {}
 DATABASES['default'] = dj_database_url.config()
+# Use MySQL strict mode to escalate truncation warnings to errors. See
+# https://docs.djangoproject.com/en/1.10/ref/databases/#setting-sql-mode
 DATABASES['default']['OPTIONS'] = {
-    'local_infile': 1
+    'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"' 
 }
 
 # Creating a local sqlite DB in memory for testing is a lot faster than 
