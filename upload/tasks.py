@@ -72,13 +72,11 @@ def sanitize(string):
 #---------------------------------------
 # End helper functions
 #---------------------------------------
-
 @shared_task(bind=True)
 def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     """
-    A celery task that accesses a dataabse
-    and executes a LOAD DATA INFILE query
-    to load the csv into it.
+    A celery task that accesses a database and executes a LOAD DATA INFILE 
+    query to load the csv into it.
     """
     total = 8
     step = forward(self, 0, 'Downloading data from Amazon S3', total)
@@ -170,6 +168,10 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
             r = re.compile(r'\(.+?\)')
             sql_warnings = [r.findall(str(warning))[0] for warning in w]
 
+    # After the file is successfully uploaded to the DB, copy it from the 
+    # tmp/ directory to its final home and delete the temporary file
+    url = copy_final_s3(s3_path, db_name, table_name)
+
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
     # so that it can be accessed by other views
@@ -182,10 +184,10 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     return {'error': False,
         'table': table_name,
+        'url': url,
         'db': db_name,
         'data': dataf,
         'headers': columns,
         'warnings': sql_warnings
     }
-
 
