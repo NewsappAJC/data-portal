@@ -11,7 +11,8 @@ class Table(models.Model):
     upload_time = models.DateTimeField(auto_now_add=True)
     upload_log = models.TextField(blank=True)
     source = models.CharField(max_length=300, blank=False, null=False)
-    next_update = models.DateField(blank=True)
+    next_update = models.DateField(blank=True, null=True)
+    url = models.URLField(max_length=400)
 
 
 class Column(models.Model):
