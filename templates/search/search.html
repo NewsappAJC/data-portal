@@ -24,6 +24,17 @@
               <p>
                   {{ result.object.user.username }}
               </p>
+
+              {% for col in result.object.table.column_set.all %}
+                <p>
+                  {{ col.column }}
+                </p>
+              {% empty %}
+                <p>
+                  No columns
+                </p>
+              {% endfor %}
+
           {% empty %}
               <p>No results found.</p>
           {% endfor %}
