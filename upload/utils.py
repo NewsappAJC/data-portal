@@ -1,7 +1,9 @@
 # Python standard lib imports
+# import pdb
 import os
 from datetime import date
 import re
+# import pdb
 
 # Django imports
 from django.conf import settings
@@ -67,19 +69,20 @@ def clean(names):
     clean_names = []  # Will hold sanitized column names
     for name in names:
         # Append a number to a column name if it already exists in the table
-        if name in preexisting:
-            preexisting.append(name)
+        preexisting.append(name)
+
+        if preexisting.count(name) > 1:
             c = preexisting.count(name) - 1
             name += str(c)
 
         # Use regex to remove spaces at the beginning of the string, replac
         # spaces and underscores with hyphens, remove line breaks, strip all
         # non-alphanumeric characters
-        rs = [(re.compile(r'-|\s'), '_'), (re.compile(r'\W'), '')]
+        rxs = [(re.compile(r'-|\s'), '_'), (re.compile(r'\W'), '')]
         clean_name = name
 
-        for r, sub_ in rs:
-            clean_name = re.sub(r, sub_, clean_name.strip())
+        for rx, sub_ in rxs:
+            clean_name = re.sub(rx, sub_, clean_name.strip())
 
         # MySQL allows 64 character column names maximum
         clean_names.append(clean_name.lower()[:60])
@@ -144,9 +147,10 @@ def copy_final_s3(tmp_path, db_name, table_name):
     final_path = '{stem}/original/{table}.csv'.format(stem=unique_stem,
                                                       table=table_name)
 
-    # Write the file to Amazon S3 and delete the file in tmp/
-    s3.Object(BUCKET_NAME, final_path).copy_from(CopySource=tmp_path)
-    # s3.Object(BUCKET_NAME, tmp_path).delete()
+    # Write the file to Amazon S3 and delete the temporary file
+    copy_source = BUCKET_NAME + '/' + tmp_path
+    s3.Object(BUCKET_NAME, final_path).copy_from(CopySource=copy_source)
+    s3.Object(BUCKET_NAME, tmp_path).delete()
 
     # Generate a README file
     # readme_template = open(os.path.join(settings.BASE_DIR,
@@ -167,8 +171,14 @@ def copy_final_s3(tmp_path, db_name, table_name):
 
     # Generate a presigned URL so that reporters who don't have access to the
     # AWS account can still access the data
+    try:
+        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
+                              aws_secret_access_key=settings.AWS_SECRET_KEY)
+    except botocore.exceptions.ClientError:
+        return
+
     p = {'Bucket': BUCKET_NAME, 'Key': final_path}
-    url = s3.generate_presigned_url(ClientMethod='get_object', Params=p)
+    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
 
     return url
 
