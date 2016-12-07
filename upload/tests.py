@@ -3,16 +3,16 @@ import os
 
 # Django imports
 from django.test import TestCase
-# from django.core.files import File
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.conf import settings
 
-# Third-party imports
-# from mock import Mock
-
 # Local module imports
-# from .forms import DataForm
+from .utils import write_tempfile_to_s3, check_duplicates
+
+# Constants
+LOCAL_CSV = os.path.join(settings.BASE_DIR,
+                         'upload', 'test_files', 'vote_data.csv')
 
 
 class UploadFileViewTestCase(TestCase):
@@ -22,17 +22,20 @@ class UploadFileViewTestCase(TestCase):
         User.objects.create_user(username='jonathan',
                                  email='jonathan.cox.c@gmail.com',
                                  password='mock_pw')
+
         self.client.login(username='jonathan', password='mock_pw')
 
     def test_index_view_get(self):
         """
-        Test that the index page loads and populates the list of databases in
-        the form
+        Test that the index page loads
         """
         response = self.client.get(reverse('upload:index'))
         self.assertEqual(response.status_code, 200)
 
     def test_index_view_post(self):
+        """
+        Test that POST requests populated with correct type of data succeed
+        """
         test_data = {
             'table_name': 'voter_dist_data_2016',
             'db_select': 'user_jcox',
@@ -43,9 +46,54 @@ class UploadFileViewTestCase(TestCase):
             'press_contact_number': '123 456 7890',
         }
 
-        path = os.path.join(settings.BASE_DIR,
-                            'upload', 'test_files', 'vote_data.csv')
+        path = LOCAL_CSV
 
         with open(path) as f:
             test_data['data_file'] = f
-            self.client.post(reverse('upload:index'), test_data)
+            response = self.client.post(reverse('upload:index'), test_data)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_index_view_(self):
+        """
+        Test that POST requests populated with possible SQL injection
+        characters (any non-alphanumeric character) fail
+        """
+        test_data = {
+            'table_name': 'DROP TABLE test_table;',
+            'db_select': 'user_jcox',
+            'source': 'Secretary of State',
+            'topic': 'Elections',
+            'press_contact': 'Secretary of State Dude',
+            'press_contact_email': 'secretary@secretary-of-state.gov',
+            'press_contact_number': '123 456 7890',
+        }
+
+        path = LOCAL_CSV
+
+        with open(path) as f:
+            test_data['data_file'] = f
+            response = self.client.post(reverse('upload:index'), test_data)
+
+        self.assertEqual(response.status_code, 400)
+
+
+class UtilsTestCase(TestCase):
+    """
+    Test helper functions that are each too small to justify creating their
+    own TestCase instance
+    """
+    def test_write_tempfile(self):
+        s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
+        self.assertTrue(s3_path.startswith('tmp/test'))
+
+    def test_check_duplicates(self):
+        """
+        Ensure that check_duplicates changes the name of the file to avoid
+        collisions
+        """
+        original_s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
+        duplicate_path = check_duplicates(original_s3_path)
+
+        self.assertFalse(original_s3_path == duplicate_path)
+
