@@ -55,8 +55,6 @@ def upload_file(request):
 
             # Write the CSV to a temporary file in the Amazon S3 bucket that
             # we will retrieve later before uploading to the MySQL server
-            print 'Path: ', path
-            print 'Table: ', table_name
             request.session['s3_path'] = write_tempfile_to_s3(path, table_name)
 
             headers = get_column_names(path)
