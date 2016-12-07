@@ -21,7 +21,7 @@ from upload.tasks import load_infile
 def upload_file(request):
     """
     Take file uploaded by user, use csvkit to generate a DB schema, and write
-    to an SQL table. Copy file and metadata to s3.
+    to an SQL table. Copy original file and metadata to s3.
     """
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
@@ -67,16 +67,15 @@ def upload_file(request):
         else:
             # Setting safe to False is necessary to allow non-dict objects to
             # be serialized. To prevent XSS attacks make sure to escape the
-            # results on client side. See django docs for details about
-            # serializing non-dict objects
+            # results on client side (I'm doing this). See django docs for
+            # details about serializing non-dict objects
             return JsonResponse(
                 form.errors.as_json(escape_html=True),
                 status=400,
                 safe=False
             )
 
-    # If request method isn't POST or if the form data is invalid render the
-    # homepage
+    # If request method isn't POST then render the homepage
     return render(request,
                   'upload/file-select.html',
                   {'form': form, 'uploads': uploads})
@@ -95,6 +94,57 @@ def categorize(request):
     }
 
     return render(request, 'upload/categorize.html', context)
+
+
+@login_required
+def write_to_db(request):
+    """
+    Download a file from S3 to the /tmp directory, then execute a LOAD
+    DATA INFILE statement to push it to the MySQL server
+    """
+    if request.method == 'POST':
+        # We don't want to create a column for the csrf token so strip it out
+        keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
+        # Have to validate manually because we can't use a Django form class
+        # for a dynamically generated form. We force user to select a category
+        # for every header
+        if len(keys) < len(request.session['headers']):
+            messages.add_message(request, messages.ERROR,
+                                 'Please select a category for every column')
+            return redirect(reverse('upload:categorize'))
+
+        headers = request.session['headers']
+
+        params = request.session['table_params']
+        cparams = {key: value for key, value in params.items()}
+        cparams['columns'] = headers
+        cparams['s3_path'] = request.session['s3_path']
+
+        # Begin load data infile query as a separate task so it doesn't slow
+        # response load_infile accepts the following arguments:
+        # (s3_path, db_name, table_name, columns)
+        task = load_infile.delay(**cparams)
+
+        # We will use the id to poll Redis for task status in the
+        # check_task_status view
+        request.session['task_id'] = task.id
+
+        # Get the index of each column header and set the appropriate category
+        # Because the form data is POSTed as a dict we can't be sure about
+        # the order
+        for key in keys:
+            for i, val in enumerate(headers):
+                if val == key:
+                    header_index = i
+                    break
+
+            val = request.POST[key]
+            request.session['headers'][header_index]['category'] = val
+
+        context = {'table': request.session['table_params']['table_name']}
+        return render(request, 'upload/upload.html', context)
+
+    return redirect(reverse('upload:index'))
 
 
 @login_required
@@ -149,61 +199,10 @@ def check_task_status(request):
         return JsonResponse(data)
 
 
-@login_required
-def write_to_db(request):
-    """
-    Download a file from S3 to the /tmp directory, then execute a LOAD
-    DATA INFILE statement to push it to the MySQL server
-    """
-    if request.method == 'POST':
-        # We don't want to create a column for the csrf token so strip it out
-        keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
-        # Have to validate manually because we can't use a Django form class
-        # for a dynamically generated form. We force user to select a category
-        # for every header
-        if len(keys) < len(request.session['headers']):
-            messages.add_message(request, messages.ERROR,
-                                 'Please select a category for every column')
-            return redirect('/categorize/')
-
-        params = request.session['table_params']
-        cparams = {key: value for key, value in params.items()}
-        cparams['columns'] = request.session['headers']
-        cparams['s3_path'] = request.session['s3_path']
-
-        # Begin load data infile query as a separate task so it doesn't slow
-        # response load_infile accepts the following arguments:
-        # (s3_path, db_name, table_name, columns)
-        task = load_infile.delay(**cparams)
-
-        # We will use the id to poll Redis for task status in the
-        # check_task_status view
-        request.session['task_id'] = task.id
-        request.session['task_type'] = 'final'
-
-        headers = request.session['headers']
-
-        # Get the index of each column header and set the appropriate category
-        # Because the form data is POSTed as a dict we can't be sure about
-        # the order
-        for key in keys:
-            for i, val in enumerate(headers):
-                if val == key:
-                    header_index = i
-                    break
-
-            headers[header_index]['category'] = request.POST[key]
-
-        context = {'table': request.session['table_params']['table_name']}
-        return render(request, 'upload/upload.html', context)
-
-    return redirect(reverse('upload:index'))
-
-
 def logout_user(request):
     """
     Log a user out
     """
     logout(request)
     messages.add_message(request, messages.ERROR, 'You have been logged out')
-    return redirect('/login/')
+    return redirect(reverse('upload:login'))
