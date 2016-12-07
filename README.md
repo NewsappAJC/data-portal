@@ -54,3 +54,8 @@ Run dev server
 $ python manage.py runserver_plus
 ```
 
+Run tests
+---
+If you want to add tests, add them in a `tests.py` file in the app you want to test, and they'll be automatically picked up by the Django testing framework. Run tests:
+
+`python manage.py test`
