@@ -2,7 +2,6 @@
 import os
 from datetime import date
 import re
-import pdb
 
 # Django imports
 from django.conf import settings
@@ -47,7 +46,14 @@ def check_duplicates(key, i=0):
         # If the key already exists, call the function again with a different
         # suffix
         i += 1
-        return check_duplicates('{}_{}'.format(key, str(i)), i)
+
+        # If there's already a number appended to the end of the key, strip it
+        # out
+        rx = re.compile(r'\(\d+\)$')
+        if rx.search(key):
+            key = re.sub(rx, '', key)
+
+        return check_duplicates('{}({})'.format(key, str(i)), i)
     except botocore.exceptions.ClientError:
         return key
 
@@ -176,7 +182,6 @@ def write_tempfile_to_s3(local_path, table_name):
     bucket = s3.Bucket(BUCKET_NAME)
 
     s3_path = check_duplicates('tmp/{}'.format(table_name))
-    pdb.set_trace()
 
     bucket.upload_file(local_path, s3_path)
 
