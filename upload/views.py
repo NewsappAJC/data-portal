@@ -1,35 +1,26 @@
-# Python standard lib imports
-import json
-import os
-import logging
-import time
-import pdb
-
 # Django imports
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 
 # Third-party imports
-import boto3, botocore
 from celery.result import AsyncResult
 
 # Local imports
 from .forms import DataForm
-from .models import Column, Table, Contact
+from .models import Column, Table
 from .utils import get_column_names, write_tempfile_to_s3
-# Have to do an absolute import here because of how celery resolves paths. See
-# http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-naming-relative-imports
+# Have to do an absolute import below because of how celery resolves paths.
 from upload.tasks import load_infile
 
 
 @login_required
 def upload_file(request):
     """
-    Take file uploaded by user, use csvkit to generate a DB schema, and write 
+    Take file uploaded by user, use csvkit to generate a DB schema, and write
     to an SQL table. Copy file and metadata to s3.
     """
     # Get form data, assign default values in case it's missing information.
@@ -51,7 +42,10 @@ def upload_file(request):
 
             # Store the table config in session storage so that other views can
             # access it later.
-            db_name = form.cleaned_data['db_input'] or form.cleaned_data['db_select']
+            db_input = form.cleaned_data['db_input']
+            db_select = form.cleaned_data['db_select']
+            db_name = db_input or db_select  # One will be null
+
             request.session['table_params'] = {
                 'topic': form.cleaned_data['topic'],
                 'db_name': db_name,
@@ -59,8 +53,10 @@ def upload_file(request):
                 'table_name': table_name,
             }
 
-            # Write the CSV to a temporary file in the Amazon S3 bucket that 
+            # Write the CSV to a temporary file in the Amazon S3 bucket that
             # we will retrieve later before uploading to the MySQL server
+            print 'Path: ', path
+            print 'Table: ', table_name
             request.session['s3_path'] = write_tempfile_to_s3(path, table_name)
 
             headers = get_column_names(path)
@@ -71,10 +67,10 @@ def upload_file(request):
             return HttpResponse(status=200)
 
         else:
-            # Setting safe to False is necessary to allow non-dict objects to be serialized.
-            # To prevent XSS attacks make sure to escape the results on client side.
-            # See https://docs.djangoproject.com/en/1.10/ref/forms/api/#django.forms.Form.errors.as_json
-            # More about serializing non-dict objects: https://docs.djangoproject.com/en/1.10/ref/request-response/#serializing-non-dictionary-objects
+            # Setting safe to False is necessary to allow non-dict objects to
+            # be serialized. To prevent XSS attacks make sure to escape the
+            # results on client side. See django docs for details about
+            # serializing non-dict objects
             return JsonResponse(
                 form.errors.as_json(escape_html=True),
                 status=400,
@@ -83,7 +79,10 @@ def upload_file(request):
 
     # If request method isn't POST or if the form data is invalid render the
     # homepage
-    return render(request, 'upload/file-select.html', {'form': form, 'uploads': uploads})
+    return render(request,
+                  'upload/file-select.html',
+                  {'form': form, 'uploads': uploads})
+
 
 @login_required
 def categorize(request):
@@ -114,8 +113,8 @@ def check_task_status(request):
         'result': response.result
     }
 
-    # If the task is successful, write information about the upload to the Django 
-    # DB. Find a way to make sure this database reflects changes to the 
+    # If the task is successful, write information about the upload to the
+    # Django DB. Find a way to make sure this database reflects changes to the
     if data['status'] == 'SUCCESS' and not data['result']['error']:
         # Create a table object in the Django DB
         params = request.session['table_params']
@@ -132,15 +131,15 @@ def check_task_status(request):
 
         # Create column objects for each column in the table
         # Some of the data about each column is held in session storage,
-        # some is returned by the task. Both store the columns in the same order.
+        # some is returned by the task. Both store the columns in the same
+        # order.
         session_headers = request.session['headers']
         for i, header in enumerate(data['result']['headers']):
-            c = Column(table=t, 
-                column=session_headers[i]['name'],
-                mysql_type=header['datatype'],
-                information_type=session_headers[i]['category'],
-                column_size=header['length']
-            )
+            c = Column(table=t,
+                       column=session_headers[i]['name'],
+                       mysql_type=header['datatype'],
+                       information_type=session_headers[i]['category'],
+                       column_size=header['length'])
             c.save()
 
     # If response isn't JSON serializable it's an error message. Convert it to
@@ -151,6 +150,7 @@ def check_task_status(request):
         data['result'] = str(data['result'])
         return JsonResponse(data)
 
+
 @login_required
 def write_to_db(request):
     """
@@ -160,11 +160,12 @@ def write_to_db(request):
     if request.method == 'POST':
         # We don't want to create a column for the csrf token so strip it out
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
-        # Have to validate manually because we can't use a Django form class 
-        # for a dynamically generated form. We force user to select a category 
+        # Have to validate manually because we can't use a Django form class
+        # for a dynamically generated form. We force user to select a category
         # for every header
         if len(keys) < len(request.session['headers']):
-            messages.add_message(request, messages.ERROR, 'Please select a category for every column')
+            messages.add_message(request, messages.ERROR,
+                                 'Please select a category for every column')
             return redirect('/categorize/')
 
         params = request.session['table_params']
@@ -172,8 +173,8 @@ def write_to_db(request):
         cparams['columns'] = request.session['headers']
         cparams['s3_path'] = request.session['s3_path']
 
-        # Begin load data infile query as a separate task so it doesn't slow response
-        # load_infile accepts the following arguments:
+        # Begin load data infile query as a separate task so it doesn't slow
+        # response load_infile accepts the following arguments:
         # (s3_path, db_name, table_name, columns)
         task = load_infile.delay(**cparams)
 
@@ -185,13 +186,21 @@ def write_to_db(request):
         headers = request.session['headers']
 
         # Get the index of each column header and set the appropriate category
+        # Because the form data is POSTed as a dict we can't be sure about
+        # the order
         for key in keys:
-            hindex = [i for i, val in enumerate(headers) if headers[i]['name'] == key][0]
-            headers[hindex]['category'] = request.POST[key]
+            for i, val in enumerate(headers):
+                if val == key:
+                    header_index = i
+                    break
 
-        return render(request, 'upload/upload.html', {'table': request.session['table_params']['table_name']})
+            headers[header_index]['category'] = request.POST[key]
 
-    return redirect('/')
+        context = {'table': request.session['table_params']['table_name']}
+        return render(request, 'upload/upload.html', context)
+
+    return redirect(reverse('upload:index'))
+
 
 def logout_user(request):
     """
