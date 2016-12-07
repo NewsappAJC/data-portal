@@ -2,24 +2,19 @@
 from __future__ import absolute_import
 import os
 import re
-import csv
 import warnings
-import redis
-import time
-from datetime import date
-import subprocess
-import random
 
 # Third party imports
 import sqlalchemy
 from sqlalchemy import exc # error handling
 from sqlalchemy.sql import text # protect from SQL injection
-from sqlalchemy.engine.url import make_url
 from celery import shared_task
-from celery.contrib import rdb
 import boto3
 import botocore
 from csvkit import sql, table
+
+# Local module imports
+from .utils import copy_final_s3
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
@@ -27,9 +22,7 @@ URL = os.environ.get('DATA_WAREHOUSE_URL')
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 
-#---------------------------------------
-# Begin helper functions
-#---------------------------------------
+
 def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
@@ -69,9 +62,8 @@ def forward(instance, step, message, total):
 def sanitize(string):
     r = re.compile(r'\W')
     return re.sub(r, '', string)
-#---------------------------------------
-# End helper functions
-#---------------------------------------
+
+
 @shared_task(bind=True)
 def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     """
@@ -81,16 +73,16 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     total = 8
     step = forward(self, 0, 'Downloading data from Amazon S3', total)
 
-    session = boto3.Session(aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
+    session = boto3.Session(aws_access_key_id=ACCESS_KEY, 
+                            aws_secret_access_key=SECRET_KEY)
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
 
-    # Check if a file with the same name already exists in the
-    # S3 bucket, and if so throw an error
+    # Attempt to download the temporary file from S3
     try:
         local_path = '/' + s3_path
-        bucket.download_file(s3_path, local_path) # Have to download in order to be able to execute load data infile
+        bucket.download_file(s3_path, local_path)
     except botocore.exceptions.ClientError:
         return
 
