@@ -239,3 +239,4 @@ class WriteToDBTestCase(TestCase):
         # Check that the mock celery task was fired and that the page returned
         self.assertTrue(_celery_mock.called)
         self.assertEqual(response.status_code, 200)
+
