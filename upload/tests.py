@@ -1,15 +1,14 @@
 # Standard library imports
 import os
-from importlib import import_module
-# import pdb
 
 # Django imports
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.conf import settings
 
 # Local module imports
+from .views import categorize, write_to_db
 from .utils import (write_tempfile_to_s3, check_duplicates, start_s3_session,
                     clean, copy_final_s3)
 
@@ -144,19 +143,19 @@ class CategorizeViewTestCase(TestCase):
     """
     def setUp(self):
         # Create a mock user so that we can access restricted pages
-        # without redirecting to /login/
-        User.objects.create_user(username='jonathan',
+        # without redirecting to /login/. Use RequestFactory to create a mock
+        # request object
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='jonathan',
                                  email='jonathan.cox.c@gmail.com',
                                  password='mock_pw')
 
-        self.client.login(username='jonathan', password='mock_pw')
-
-        headers = ['col1', 'col2', 'col3']
-        session = self.client.session
-        session['headers'] = headers
-
     def test_categorize_view_get(self):
-        response = self.client.get(reverse('upload:categorize'))
+        request = self.factory.get(reverse('upload:categorize'))
+        request.user = self.user
+        request.session = {'headers': ['col_1', 'col_2', 'col_3']}
+
+        response = categorize(request)
         self.assertEqual(response.status_code, 200)
 
 
@@ -170,31 +169,27 @@ class WriteToDBTestCase(TestCase):
     def setUp(self):
         # Create a mock user so that we can access restricted pages
         # without redirecting to /login/
-        User.objects.create_user(username='jonathan',
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='jonathan',
                                  email='jonathan.cox.c@gmail.com',
                                  password='mock_pw')
 
         self.client.login(username='jonathan', password='mock_pw')
 
-        # Generate some mock session data. WAY harder than it should be, what
-        # the heck Django
-        engine = import_module(settings.SESSION_ENGINE)
-        self.client.session = engine.SessionStore()
-        self.client.session.save()
+    def test_write_to_db_view_get(self):
+        """
+        GET requests should redirect to index
+        """
+        response = self.client.get(reverse('upload:write_to_db'))
+        self.assertEqual(response.status_code, 302)  # 302 = redirect code
 
-        session_cookie = settings.SESSION_COOKIE_NAME
-
-        self.client.cookies[session_cookie] = self.client.session.session_key
-        cookie_data = {
-            'max-age': None,
-            'path': '/',
-            'domain': settings.SESSION_COOKIE_DOMAIN,
-            'secure': settings.SESSION_COOKIE_SECURE or None,
-            'expires': None,
-        }
-        self.client.cookies[session_cookie].update(cookie_data)
-
+    def test_write_to_db_view_post(self):
+        """
+        POST requests should match the data types returned by the categorize
+        view to the relevant header, then fire the load_infile task
+        """
         test_s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
+
         test_table_params = {
             'topic': 'Test topic',
             'db_name': 'import_tool_test',
@@ -210,33 +205,25 @@ class WriteToDBTestCase(TestCase):
             'headers': test_headers
         }
 
-        for key in session_data:
-            self.client.session[key] = session_data[key]
+        # Create the request object manually, since session handling for
+        # Client() is messed up see https://code.djangoproject.com/ticket/10899
+        request = self.factory.get(reverse('upload:write_to_db'))
+        request.user = self.user
+        request.session = session_data
 
-        self.client.session.save()
+        # Add the POST data
+        test_data = {
+            'total_income': None,
+            'precinct_id': None,
+            'tract_id': None,
+            'race': None,
+            'households': None,
+        }
+        request.POST = test_data
 
-    def test_write_to_db_view_get(self):
-        """
-        GET requests should redirect to index
-        """
-        response = self.client.get('upload:write_to_db')
-        self.assertEqual(response.status_code, 302)  # 302 = redirect code
+        response = write_to_db(request)
+        self.assertEqual(response.status_code, 302)
 
-    #def test_write_to_db_view_post(self):
-    #    """
-    #    POST requests should match the data types returned by the categorize
-    #    view to the relevant header, then fire the load_infile task
-    #    """
-    #    test_data = {
-    #        'total_income': None,
-    #        'precinct_id': None,
-    #        'tract_id': None,
-    #        'race': None,
-    #        'households': None,
-    #    }
-    #    response = self.client.post(reverse('upload:write_to_db'), test_data)
-    #    self.assertEqual(response.status_code, 200)
-
-    #    session = self.client.session
-    #    self.assertFalse(not session['task_id'])
+        session = self.client.session
+        self.assertFalse(not session['task_id'])
 
