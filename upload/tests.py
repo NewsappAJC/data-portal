@@ -7,8 +7,11 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.conf import settings
 
+# Third party imports
+from mock import patch
+
 # Local module imports
-from .views import categorize, write_to_db
+from .views import write_to_db, categorize
 from .utils import (write_tempfile_to_s3, check_duplicates, start_s3_session,
                     clean, copy_final_s3)
 
@@ -176,6 +179,10 @@ class WriteToDBTestCase(TestCase):
 
         self.client.login(username='jonathan', password='mock_pw')
 
+    def _celery_task_mock(self):
+        task = {'id': 1234}
+        return task
+
     def test_write_to_db_view_get(self):
         """
         GET requests should redirect to index
@@ -183,11 +190,16 @@ class WriteToDBTestCase(TestCase):
         response = self.client.get(reverse('upload:write_to_db'))
         self.assertEqual(response.status_code, 302)  # 302 = redirect code
 
-    def test_write_to_db_view_post(self):
+    # Use mock to patch the load_infile function so that we don't actually fire
+    # the celery task. Have to patch the namespace that the module is imported
+    # into
+    @patch('upload.views.load_infile.delay')
+    def test_write_to_db_view_post(self, _celery_mock):
         """
-        POST requests should match the data types returned by the categorize
-        view to the relevant header, then fire the load_infile task
+        Test that POST requests match the data types the user chooses for the 
+        columns to the relevant header, then fire the load_infile task
         """
+
         test_s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
 
         test_table_params = {
@@ -196,8 +208,8 @@ class WriteToDBTestCase(TestCase):
             'source': 'Test source',
             'table_name': 'test_table_name'
         }
-        test_headers = ['total_income', 'precinct_id', 'tract_id', 'race',
-                        'households']
+        test_headers = [{'name': 'income', 'category': None}, 
+                        {'name': 'precinct_id', 'category': None}]
 
         session_data = {
             'table_params': test_table_params,
@@ -207,23 +219,23 @@ class WriteToDBTestCase(TestCase):
 
         # Create the request object manually, since session handling for
         # Client() is messed up see https://code.djangoproject.com/ticket/10899
+        # Set the user, session, and method manually
         request = self.factory.get(reverse('upload:write_to_db'))
         request.user = self.user
         request.session = session_data
+        request.method = 'POST'
 
-        # Add the POST data
+        # Add the POST data (the categories that the user added to the columns)
         test_data = {
-            'total_income': None,
-            'precinct_id': None,
-            'tract_id': None,
-            'race': None,
-            'households': None,
+            'income': 'first_name',
+            'precinct_id': 'last_name'
         }
         request.POST = test_data
 
+        # Now that we've populated the request with data, pass it to the 
+        # view
         response = write_to_db(request)
-        self.assertEqual(response.status_code, 302)
 
-        session = self.client.session
-        self.assertFalse(not session['task_id'])
-
+        # Check that the mock celery task was fired and that the page returned
+        self.assertTrue(_celery_mock.called)
+        self.assertEqual(response.status_code, 200)

@@ -63,7 +63,6 @@ def sanitize(string):
     r = re.compile(r'\W')
     return re.sub(r, '', string)
 
-
 @shared_task(bind=True)
 def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     """

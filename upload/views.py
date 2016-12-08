@@ -134,7 +134,7 @@ def write_to_db(request):
         # the order
         for key in keys:
             for i, val in enumerate(headers):
-                if val == key:
+                if val['name'] == key:
                     header_index = i
                     break
 
