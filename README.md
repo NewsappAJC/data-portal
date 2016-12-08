@@ -48,14 +48,18 @@ This tool needs access to a Django database where it can store metadata about ea
 
   Format: Your access key and secret key for the AWS bucket that will be updated by the app.
 
-Run dev server
+Development
 ---
+Run dev server
+
 ```
 $ python manage.py runserver_plus
 ```
 
+Static assets live in the `static` dir of the project root, and are compiled to the `staticfiles` dir. Within each app, asynchronous tasks live in `tasks`, and helper functions can be found in `utils.py`. `search_index` stores the information that the Haystack library uses to create a search index.
+
 Run tests
 ---
-If you want to add tests, add them in a `tests.py` file in the app you want to test, and they'll be automatically picked up by the Django testing framework. Run tests:
+If you want to add tests, add them in a `tests.py` file in the app you want to test, and they'll be automatically picked up by the Django testing framework. It might take a couple minutes for the tests to run.
 
 `python manage.py test`
