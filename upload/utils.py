@@ -50,7 +50,7 @@ def check_duplicates(key, i=0):
         i += 1
 
         # If there's already a number appended to the end of the key, strip it
-        # out
+        # out so we can append the new number
         rx = re.compile(r'\(\d+\)$')
         if rx.search(key):
             key = re.sub(rx, '', key)
