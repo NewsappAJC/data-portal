@@ -1,3 +1,4 @@
+import pdb
 # Django imports
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
@@ -123,6 +124,7 @@ def write_to_db(request):
         # Begin load data infile query as a separate task so it doesn't slow
         # response load_infile accepts the following arguments:
         # (s3_path, db_name, table_name, columns)
+        pdb.set_trace()
         task = load_infile.delay(**cparams)
 
         # We will use the id to poll Redis for task status in the
@@ -169,7 +171,7 @@ def check_task_status(request):
         t = Table(
             table=data['result']['table'],
             url=data['result']['url'],
-            database=params['db'],
+            database=params['db_name'],
             topic=params['topic'],
             user=request.user,
             source=params['source'],
