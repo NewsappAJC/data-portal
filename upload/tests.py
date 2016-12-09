@@ -12,13 +12,98 @@ from mock import patch
 
 # Local module imports
 from .views import write_to_db, categorize
-from .utils import (write_tempfile_to_s3, check_duplicates, start_s3_session,
-                    clean, copy_final_s3)
+from .utils import (write_tempfile_to_s3, check_duplicates, clean, copy_final_s3)
 
 # Constants
 LOCAL_CSV = os.path.join(settings.BASE_DIR,
                          'upload', 'test_files', 'vote_data.csv')
 
+# -----------------------------------------------------------------------------
+# BEGIN MOCK CLASSES.
+# Use these as patches if you want to mock a connection to S3 or the MySQL
+# DB without actually executing queries. See the mock library's documentation
+# for an explanation of how to patch a module
+# -----------------------------------------------------------------------------
+
+class MockS3Bucket(object):
+    """
+    Mock a connection to an S3 bucket
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def download_file(self, *args, **kwargs):
+        # Return a path to the test CSV
+        return LOCAL_CSV
+
+
+class MockS3Object(object):
+    """
+    Mock a connection to a particular object in S3
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def copy_from(self, **kwargs):
+        pass
+
+    def delete(self):
+        pass
+
+
+class MockS3Session(object):
+    """
+    Mock boto3.Session, which connects to an Amazon S3 server
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def resource(self, *args, **kwargs):
+        return {'Bucket': MockS3Bucket,
+                'Object': MockS3Object}
+
+class MockS3Client(object):
+    """
+    Mock boto3.Session, which connects to an Amazon S3 server
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def generate_presigned_url(self, *args, **kwargs):
+        return 'http://test-url.com'
+
+
+class MockDBConnection(object):
+    """
+    Mock a connection to a MySQL server and execute queries on it
+    """
+    def execute(self, query):
+        if query.startswith('SELECT'):
+            # Return mock table data for SELECT query
+            mock_entries = ['test_val_1', 'test_val_2']
+            return [
+                ['col_1', 'col_2'],
+                {'col_1': mock_entries, 'col_2': mock_entries}
+            ]
+
+        # Return True for all other SQL queries
+        return True
+
+
+class MockSQLAlchemy(object):
+    """
+    Mocks sqlalchemy
+    """
+    def create_engine(self, *args, **kwargs):
+        return {'connect': MockDBConnection()}
+
+# -----------------------------------------------------------------------------
+# END MOCK CLASSES
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# BEGIN TEST CLASSES
+# -----------------------------------------------------------------------------
 
 class UtilsTestCase(TestCase):
     """
@@ -38,12 +123,6 @@ class UtilsTestCase(TestCase):
         duplicate_path = check_duplicates(original_s3_path)
 
         self.assertFalse(original_s3_path == duplicate_path)
-
-    def test_s3_session_start(self):
-        """
-        Check that the app is able to connect to s3
-        """
-        start_s3_session()
 
     def test_clean(self):
         """
@@ -67,6 +146,7 @@ class UtilsTestCase(TestCase):
 
         url = copy_final_s3(tmp_path, db_name, table_name)
         self.assertFalse(not url)
+
 
 class UploadFileViewTestCase(TestCase):
     """
@@ -239,4 +319,25 @@ class WriteToDBTestCase(TestCase):
         # Check that the mock celery task was fired and that the page returned
         self.assertTrue(_celery_mock.called)
         self.assertEqual(response.status_code, 200)
+
+class LoadInfileTestCase(TestCase):
+    def setUp(self):
+        pass
+
+    def _mock_copy(self):
+        return 'http://test-url.com'
+
+    # Patching nested functions is truly a nightmare so I've mocked these
+    # objects at the top of the file
+    @patch('upload.tasks.boto3.Session')
+    @patch('upload.tasks.sqlalchemy')
+    @patch('upload.tasks.copy_final_s3')
+    def test_load_infile(self, MockS3Session, MockDBConnection, _mock_copy):
+        args = {
+            's3_path': LOCAL_CSV,
+            'db_name': 'test',
+            'table_name': 'test',
+            'columns': None
+        }
+        print args
 
