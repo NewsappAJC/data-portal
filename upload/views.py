@@ -123,7 +123,11 @@ def write_to_db(request):
         # Begin load data infile query as a separate task so it doesn't slow
         # response load_infile accepts the following arguments:
         # (s3_path, db_name, table_name, columns)
-        task = load_infile.delay(**cparams)
+        try:
+            task = load_infile.delay(**cparams)
+        except ValueError as e:
+            messages.add_message(request, messages.ERROR, str(e))
+            return redirect(reverse('upload:index'))
 
         # We will use the id to poll Redis for task status in the
         # check_task_status view
@@ -201,7 +205,7 @@ def check_task_status(request):
 
 def logout_user(request):
     """
-    Log a user out
+    Use django's default logout function to logout the user
     """
     logout(request)
     messages.add_message(request, messages.ERROR, 'You have been logged out')
