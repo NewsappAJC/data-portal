@@ -14,6 +14,9 @@ class Table(models.Model):
     next_update = models.DateField(blank=True, null=True)
     url = models.URLField(max_length=500)
 
+    def __unicode__(self):
+        return self.table
+
 
 class Column(models.Model):
     INFORMATION_TYPE_CHOICES = (
@@ -54,6 +57,9 @@ class Column(models.Model):
     mysql_type = models.CharField(choices=MYSQL_TYPE_CHOICES, max_length=300, blank=False, null=False)
     column_size = models.CharField(max_length=10, null=True)
     information_type = models.CharField(choices=INFORMATION_TYPE_CHOICES, max_length=30, blank=True, null=True)
+
+    def __unicode__(self):
+        return self.column
 
 
 class Contact(models.Model):
