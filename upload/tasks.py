@@ -40,7 +40,8 @@ def get_column_types(filepath, headers):
             raw_type = 'VARCHAR(10)'
 
         if raw_type == 'DATETIME':
-            # Dumb guess at the maximum length of a datetime field. Find better way?
+            # Dumb guess at the maximum length of a datetime field. Find a 
+            # better way!
             raw_type = 'VARCHAR(100)'
 
         try:
@@ -50,16 +51,26 @@ def get_column_types(filepath, headers):
 
         headers[i]['datatype'] = clean_type
         headers[i]['raw_type'] = raw_type
-        headers[i]['length'] = length,
+        headers[i]['length'] = length
 
     return headers
 
 def forward(instance, step, message, total):
+    """
+    Send a msessage to the Redis server updating the state of the task so that
+    we can have an informative progress bar
+    """
     step += 1
-    instance.update_state(state='PROGRESS', meta={'message': message, 'error': False, 'current': step, 'total': total})
+    instance.update_state(state='PROGRESS', meta={'message': message,
+                                                  'error': False,
+                                                  'current': step,
+                                                  'total': total})
     return step
 
 def sanitize(string):
+    """
+    Substitute all non alphanumeric/underscore (_) characters with empty string
+    """
     r = re.compile(r'\W')
     return re.sub(r, '', string)
 
@@ -80,10 +91,10 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     # Attempt to download the temporary file from S3
     try:
-        local_path = '/' + s3_path
+        local_path = '/tmp/' + s3_path[4:]
         bucket.download_file(s3_path, local_path)
     except botocore.exceptions.ClientError:
-        return
+        raise ValueError('Unable to download temporary file from S3')
 
     # Keep track of progress
     step = forward(self, step, 'Connecting to MySQL server', total)
@@ -123,12 +134,12 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
 
     sql_warnings = []
-    # Record all warnings raised by the writing to the MySQL db. SQLAlchemy doesn't
-    # always raise exceptions for data loss
+    # Record all warnings raised by the writing to the MySQL DB. SQLAlchemy doesn't
+    # always raise exceptions for data truncation, which is insane!
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
 
-        # If a SQL error is thrown, end the process and return a summary of the error
+        # If an SQL error is thrown, end the process and return a summary of the error
         try:
             # Check if a database with the given name exists. If it doesn't, create one.
             step = forward(self, step, 'Connecting to database {}'.format(db_name), total)
