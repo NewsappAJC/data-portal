@@ -9,6 +9,7 @@ import sqlalchemy
 from sqlalchemy import exc # error handling
 from sqlalchemy.sql import text # protect from SQL injection
 from celery import shared_task
+from celery.contrib import rdb
 import boto3
 import botocore
 from csvkit import sql, table
@@ -33,7 +34,7 @@ def get_column_types(filepath, headers):
     for i, column in enumerate(sql_table.columns):
         # Clean the type and name values
         raw_type = str(column.type)
-        clean_type = re.sub(r'\(\w+\)', '', raw_type)
+        clean_type = re.sub(re.compile(r'\(\w+\)'), '', raw_type)
         
         # Temporary fix for issue #19
         if raw_type == 'BOOLEAN':
@@ -45,9 +46,12 @@ def get_column_types(filepath, headers):
             raw_type = 'VARCHAR(100)'
 
         try:
-            length = column.type.length
+            raw_length = column.type.length
+            clean_type = re.sub(re.compile(r'\(\w+\)'), '', raw_length)
         except AttributeError:
             length = ''
+
+        rdb.set_trace()
 
         headers[i]['datatype'] = clean_type
         headers[i]['raw_type'] = raw_type
