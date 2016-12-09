@@ -75,3 +75,7 @@ class Contact(models.Model):
     email = models.EmailField(max_length=300, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     contact_type = models.CharField(choices=CONTACT_TYPE_CHOICES, max_length=50, blank=False, null=False)
+
+    def __unicode__(self):
+        return self.name
+
