@@ -81,7 +81,6 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
-
 DATABASES = {}
 DATABASES['default'] = dj_database_url.config()
 # Use MySQL strict mode to escalate truncation warnings to errors. See
