@@ -1,6 +1,7 @@
-# Standard library imports
 import pdb
+# Standard library imports
 import os
+import re
 
 # Django imports
 from django.test import TestCase, RequestFactory
@@ -10,9 +11,10 @@ from django.conf import settings
 
 # Third party imports
 from mock import patch
+import botocore
 
 # Local module imports
-from .views import write_to_db, categorize
+from .views import write_to_db, categorize, upload_file
 from .utils import (write_tempfile_to_s3, check_duplicates, clean, copy_final_s3)
 from .tasks import load_infile
 
@@ -55,7 +57,7 @@ class MockS3Object(object):
 
 class MockS3Session(object):
     """
-    Mock boto3.Session, which connects to an Amazon S3 server
+    Mock boto3.Session
     """
     def __init__(self, *args, **kwargs):
         pass
@@ -64,9 +66,22 @@ class MockS3Session(object):
         return {'Bucket': MockS3Bucket,
                 'Object': MockS3Object}
 
+class MockBoto(object):
+    """
+    Mock boto3.client
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def head_object(self, Bucket, Key):
+        if re.search(re.compile(r'\(3\)'), Key):
+            raise botocore.exceptions.ClientError({'Error': {'Code': 404}}, 'error')
+        else:
+            pass
+
 class MockS3Client(object):
     """
-    Mock boto3.Session, which connects to an Amazon S3 server
+    Mock boto3.Session
     """
     def __init__(self, *args, **kwargs):
         pass
@@ -107,120 +122,117 @@ class MockSQLAlchemy(object):
 # BEGIN TEST CLASSES
 # -----------------------------------------------------------------------------
 
-# class UtilsTestCase(TestCase):
-#     """
-#     Test helper functions that are each too small to justify creating their
-#     own TestCase instance
-#     """
-#     def test_write_tempfile(self):
-#         s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
-#         self.assertTrue(s3_path.startswith('tmp/test'))
-# 
-#     def test_check_duplicates(self):
-#         """
-#         Ensure that check_duplicates changes the name of the file to avoid name
-#         collisions
-#         """
-#         original_s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
-#         duplicate_path = check_duplicates(original_s3_path)
-# 
-#         self.assertFalse(original_s3_path == duplicate_path)
-# 
-#     def test_clean(self):
-#         """
-#         Check handling of duplicate column names, names with illegal
-#         characters, and names that exceed the length limit
-#         """
-#         test_names = ['duplicate', 'duplicate', 'test;column', 'a'*100]
-#         clean_names = clean(test_names)
-# 
-#         for c in ['duplicate', 'duplicate1', 'testcolumn', 'a'*60]:
-#             self.assertTrue(c in clean_names)
-# 
-#     def test_copy_final_s3(self):
-#         """
-#         Test that the copy_final_s3 task successfully copies the temporary
-#         file to its final home on s3
-#         """
-#         tmp_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
-#         db_name = 'test'
-#         table_name = 'test_table'
-# 
-#         url = copy_final_s3(tmp_path, db_name, table_name)
-#         self.assertFalse(not url)
-# 
-# 
-# class UploadFileViewTestCase(TestCase):
-#     """
-#     Test the upload_file view to ensure that it blocks invalid POST data,
-#     adds the right values to session storage, and returns a page on GET
-#     """
-#     def setUp(self):
-#         # Create a mock user so that we can access restricted pages
-#         # without redirecting to /login/ + have access to session storage
-#         User.objects.create_user(username='jonathan',
-#                                  email='jonathan.cox.c@gmail.com',
-#                                  password='mock_pw')
-# 
-#         self.client.login(username='jonathan', password='mock_pw')
-# 
-#     def test_index_view_get(self):
-#         """
-#         Test that the index page loads
-#         """
-#         response = self.client.get(reverse('upload:index'))
-#         self.assertEqual(response.status_code, 200)
-# 
-#     def test_index_view_post(self):
-#         """
-#         Test that a POST request populated with legal data succeeds,
-#         and that the path to the S3 file is written to session storage
-#         """
-#         test_data = {
-#             'table_name': 'voter_dist_data_2016',
-#             'db_select': 'user_jcox',
-#             'source': 'Secretary of State',
-#             'topic': 'Elections',
-#             'press_contact': 'Secretary of State Dude',
-#             'press_contact_email': 'secretary@secretary.com',
-#             'press_contact_number': '123 456 7890',
-#         }
-# 
-#         path = LOCAL_CSV
-# 
-#         with open(path) as f:
-#             test_data['data_file'] = f
-#             response = self.client.post(reverse('upload:index'), test_data)
-# 
-#         self.assertEqual(response.status_code, 200)
-# 
-#         session = self.client.session
-#         self.assertFalse(not session['s3_path'])
-# 
-#     def test_index_view_post_illegal(self):
-#         """
-#         Test that a POST requests populated with possible SQL injection
-#         characters (any non-alphanumeric character) fails
-#         """
-#         test_data = {
-#             'table_name': 'DROP TABLE test_table;',
-#             'db_select': 'user_jcox',
-#             'source': 'Secretary of State',
-#             'topic': 'Elections',
-#             'press_contact': 'Secretary of State Dude',
-#             'press_contact_email': 'secretary@secretary-of-state.gov',
-#             'press_contact_number': '123 456 7890',
-#         }
-# 
-#         path = LOCAL_CSV
-# 
-#         with open(path) as f:
-#             test_data['data_file'] = f
-#             response = self.client.post(reverse('upload:index'), test_data)
-# 
-#         self.assertEqual(response.status_code, 400)
-# 
-# 
+class UtilsTestCase(TestCase):
+    """
+    Test helper functions that are each too small to justify creating their
+    own TestCase instance
+    """
+    @patch('upload.utils.boto3.client', MockBoto)
+    def test_check_duplicates(self):
+        """
+        Ensure that check_duplicates changes the name of the file to avoid name
+        collisions
+        """
+        duplicate_path = check_duplicates('tmp/test')
+        self.assertEqual(duplicate_path, 'tmp/test(3)')
+
+    def test_clean(self):
+        """
+        Check handling of duplicate column names, names with illegal
+        characters, and names that exceed the length limit
+        """
+        test_names = ['duplicate', 'duplicate', 'test;column', 'a'*100]
+        clean_names = clean(test_names)
+
+        for c in ['duplicate', 'duplicate1', 'testcolumn', 'a'*60]:
+            self.assertTrue(c in clean_names)
+
+
+class UploadFileViewTestCase(TestCase):
+    """
+    Test the upload_file view to ensure that it blocks invalid POST data,
+    adds the right values to session storage, and returns a page on GET
+    """
+    def setUp(self):
+        # Create a mock user so that we can access restricted pages
+        # without redirecting to /login/ + have access to session storage
+        self.user = User.objects.create_user(username='jonathan',
+                                             email='jonathan.cox.c@gmail.com',
+                                             password='mock_pw')
+
+        self.client.login(username='jonathan', password='mock_pw')
+        
+    def test_index_view_get(self):
+        """
+        Test that the index page loads
+        """
+        response = self.client.get(reverse('upload:index'))
+        self.assertEqual(response.status_code, 200)
+
+    @patch('upload.views.write_tempfile_to_s3', return_value=LOCAL_CSV)
+    def test_index_view_post(self, mock_upload):
+        """
+        Test that a POST request populated with legal data succeeds.
+        Ensure that the list of headers populated by the function also
+        succeeds
+        """
+        test_data = {
+            'table_name': 'voter_dist_data_2016',
+            'db_select': 'user_jcox',
+            'source': 'Secretary of State',
+            'topic': 'Elections',
+            'press_contact': 'Secretary of State Dude',
+            'press_contact_email': 'secretary@secretary.com',
+            'press_contact_number': '123 456 7890'
+        }
+
+        path = LOCAL_CSV
+        with open(path) as f:
+            test_data['data_file'] = f
+            response = self.client.post(reverse('upload:index'), test_data)
+
+        # Check that the server responded with a success header
+        self.assertEqual(response.status_code, 200)
+
+        # Check that all the column headers are appended to the header list
+        session = self.client.session
+        rheaders = session.get('headers')
+        headers = ['total_income', 'precinct_id', 'tract_id', 'race', 'households']
+
+        self.assertTrue([x['name'] for x in rheaders] == headers)
+        self.assertTrue(len(rheaders) == 5)
+
+        # Check that sample data is correct
+        self.assertTrue(re.match(re.compile(r'68810444'), rheaders[0]['sample_data']))
+        self.assertTrue(re.match(re.compile(r'131'), rheaders[1]['sample_data']))
+        self.assertTrue(re.match(re.compile(r'Census Tract 303.09'), rheaders[2]['sample_data']))
+        self.assertTrue(re.match(re.compile(r'white'), rheaders[3]['sample_data']))
+        self.assertTrue(re.match(re.compile(r'660'), rheaders[4]['sample_data']))
+
+    def test_index_view_post_illegal(self):
+        """
+        Test that a POST requests populated with possible SQL injection
+        characters (any non-alphanumeric character) fails
+        """
+        test_data = {
+            'table_name': 'DROP TABLE test_table;',
+            'db_select': 'user_jcox',
+            'source': 'Secretary of State',
+            'topic': 'Elections',
+            'press_contact': 'Secretary of State Dude',
+            'press_contact_email': 'secretary@secretary-of-state.gov',
+            'press_contact_number': '123 456 7890',
+        }
+
+        path = LOCAL_CSV
+
+        with open(path) as f:
+            test_data['data_file'] = f
+            response = self.client.post(reverse('upload:index'), test_data)
+
+        self.assertEqual(response.status_code, 400)
+
+
 # class CategorizeViewTestCase(TestCase):
 #     """
 #     Test that the categorize view renders correctly when passed headers through
@@ -323,8 +335,6 @@ class MockSQLAlchemy(object):
 #         self.assertEqual(response.status_code, 200)
 
 class LoadInfileTestCase(TestCase):
-    # Patching nested functions is truly a nightmare so I've mocked these
-    # objects at the top of the file
     @patch('upload.tasks.boto3.Session')
     @patch('upload.tasks.sqlalchemy')
     @patch('upload.tasks.copy_final_s3', return_value='http://test-url.com')
