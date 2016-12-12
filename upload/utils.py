@@ -191,7 +191,7 @@ def write_tempfile_to_s3(local_path, table_name):
     s3 = start_s3_session()
     bucket = s3.Bucket(BUCKET_NAME)
 
-    s3_path = check_duplicates('tmp/{}'.format(table_name))
+    s3_path = check_duplicates('tmp/{}.csv'.format(table_name))
 
     bucket.upload_file(local_path, s3_path)
 

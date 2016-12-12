@@ -91,7 +91,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     # Attempt to download the temporary file from S3
     try:
-        local_path = s3_path
+        local_path = os.path.join('/', s3_path)
         bucket.download_file(s3_path, local_path)
     except botocore.exceptions.ClientError:
         raise ValueError('Unable to download temporary file from S3')
