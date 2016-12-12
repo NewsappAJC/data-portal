@@ -9,7 +9,6 @@ import sqlalchemy
 from sqlalchemy import exc # error handling
 from sqlalchemy.sql import text # protect from SQL injection
 from celery import shared_task
-from celery.contrib import rdb
 import boto3
 import botocore
 from csvkit import sql, table
@@ -45,17 +44,15 @@ def get_column_types(filepath, headers):
             # better way!
             raw_type = 'VARCHAR(100)'
 
-        try:
-            raw_length = column.type.length
-            clean_type = re.sub(re.compile(r'\(\w+\)'), '', raw_length)
-        except AttributeError:
-            length = ''
-
-        rdb.set_trace()
+        parsed_length = re.search(re.compile(r'\((\w+)\)'), raw_type)
+        if parsed_length:
+            clean_length = int(parsed_length.group(1))
+        else:
+            clean_length = None
 
         headers[i]['datatype'] = clean_type
         headers[i]['raw_type'] = raw_type
-        headers[i]['length'] = length
+        headers[i]['length'] = clean_length
 
     return headers
 
@@ -92,10 +89,9 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     s3 = session.resource('s3')
     bucket = s3.Bucket(BUCKET_NAME)
 
-
     # Attempt to download the temporary file from S3
     try:
-        local_path = '/tmp/' + s3_path[4:]
+        local_path = s3_path
         bucket.download_file(s3_path, local_path)
     except botocore.exceptions.ClientError:
         raise ValueError('Unable to download temporary file from S3')
@@ -114,7 +110,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
     sql_args = {
         'table': table_name,
-        'columns': (',').join(stypes),
+        'columns': (', ').join(stypes),
         'path': local_path,
         'db': db_name,
     }
@@ -126,10 +122,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     # We've sanitized inputs to avoid risk of SQL injection. For explanation
     # of why we're sanitizing manually instead of passing args to sqlalchemy's execute method, see
     # http://stackoverflow.com/questions/40249590/sqlalchemy-error-when-adding-parameter-to-string-sql-query
-    create_table_query = """
-        CREATE TABLE {table} ({columns});
-        """.format(**sql_args)
-
+    create_table_query = 'CREATE TABLE {table} ({columns});'.format(**sql_args)
     load_data_query = """
         LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
         FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
@@ -194,6 +187,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
         'db': db_name,
         'data': dataf,
         'headers': columns,
-        'warnings': sql_warnings
+        'warnings': sql_warnings,
+        'create_table_query': create_table_query
     }
 
