@@ -100,7 +100,7 @@ def get_column_names(filepath):
         # Loop through lines to avoid reading the entire file into memory
         for i, line in enumerate(f):
             linef = line.split(',')
-            # Append the first row to the list of headers
+            # Generate our list of headers from the first row
             if i == 0:
                 columns = linef
             # Only get sample data from the first 3 rows
