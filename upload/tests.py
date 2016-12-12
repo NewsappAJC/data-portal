@@ -18,16 +18,13 @@ from .utils import (check_duplicates, clean)
 from .tasks import load_infile
 
 # Constants
-LOCAL_CSV = os.path.join(settings.BASE_DIR,
-                         'upload', 'test_files', 'vote_data.csv')
+LOCAL_CSV = os.path.join(settings.BASE_DIR, 'upload', 'test_files', 'vote_data.csv')
 
 # -----------------------------------------------------------------------------
 # BEGIN MOCK CLASSES.
 # Use these as patches if you want to mock a connection to S3 or the MySQL
-# DB without actually executing queries. See the mock library's documentation
-# for an explanation of how to patch a module
+# DB without actually executing queries.
 # -----------------------------------------------------------------------------
-
 class MockS3Bucket(object):
     """
     Mock a connection to an S3 bucket
@@ -289,8 +286,8 @@ class WriteToDBTestCase(TestCase):
     @patch('upload.views.load_infile.delay')
     def test_write_to_db_view_post(self, _celery_mock):
         """
-        Test that POST requests match the data types the user chooses for the 
-        columns to the relevant header, then fire the load_infile task
+        Test that POST requests match the data types the user chooses for the
+        columns to the relevant header, then fires the load_infile task
         """
 
         test_s3_path = LOCAL_CSV
