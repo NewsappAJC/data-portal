@@ -148,6 +148,8 @@ HAYSTACK_CONNECTIONS = {
 # Celery
 BROKER_URL = os.environ.get('REDIS_URL')
 CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
+if 'test' in sys.argv:
+    CELERY_ALWAYS_EAGER = True  # Run Celery tasks in the same thread if testing
 
 # AWS
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
