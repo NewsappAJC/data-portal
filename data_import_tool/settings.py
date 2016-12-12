@@ -138,7 +138,7 @@ STATICFILES_DIRS = (
 )
 
 # Haystack
-es = urlparse(os.environ.get('SEARCHBOX_URL') or 'http://127.0.0.1:9200')
+es = urlparse(os.environ.get('SEARCH_URL') or 'http://127.0.0.1:9200')
 port = es.port or 80
 
 HAYSTACK_CONNECTIONS = {

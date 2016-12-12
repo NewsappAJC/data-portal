@@ -1,2 +1,4 @@
 *.pyc
 .env
+
+rds/amazon-rds-ca-cert.pem
