@@ -1,4 +1,3 @@
-import pdb
 # Standard library imports
 import os
 import re
@@ -14,8 +13,8 @@ from mock import patch
 import botocore
 
 # Local module imports
-from .views import write_to_db, categorize, upload_file
-from .utils import (write_tempfile_to_s3, check_duplicates, clean, copy_final_s3)
+from .views import write_to_db, categorize
+from .utils import (check_duplicates, clean)
 from .tasks import load_infile
 
 # Constants
@@ -233,106 +232,106 @@ class UploadFileViewTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
 
 
-# class CategorizeViewTestCase(TestCase):
-#     """
-#     Test that the categorize view renders correctly when passed headers through
-#     session storage
-#     """
-#     def setUp(self):
-#         # Create a mock user so that we can access restricted pages
-#         # without redirecting to /login/. Use RequestFactory to create a mock
-#         # request object
-#         self.factory = RequestFactory()
-#         self.user = User.objects.create_user(username='jonathan',
-#                                  email='jonathan.cox.c@gmail.com',
-#                                  password='mock_pw')
-# 
-#     def test_categorize_view_get(self):
-#         request = self.factory.get(reverse('upload:categorize'))
-#         request.user = self.user
-#         request.session = {'headers': ['col_1', 'col_2', 'col_3']}
-# 
-#         response = categorize(request)
-#         self.assertEqual(response.status_code, 200)
-# 
-# 
-# class WriteToDBTestCase(TestCase):
-#     """
-#     Test that the write_to_db view, when passed an array of header types,
-#     assigns the types to the correct headers, generates a DB schema, and starts
-#     a celery task that executes a LOAD DATA INFILE statement to add the data to
-#     the MySQL DB
-#     """
-#     def setUp(self):
-#         # Create a mock user so that we can access restricted pages
-#         # without redirecting to /login/
-#         self.factory = RequestFactory()
-#         self.user = User.objects.create_user(username='jonathan',
-#                                  email='jonathan.cox.c@gmail.com',
-#                                  password='mock_pw')
-# 
-#         self.client.login(username='jonathan', password='mock_pw')
-# 
-#     def _celery_task_mock(self):
-#         task = {'id': 1234}
-#         return task
-# 
-#     def test_write_to_db_view_get(self):
-#         """
-#         GET requests should redirect to index
-#         """
-#         response = self.client.get(reverse('upload:write_to_db'))
-#         self.assertEqual(response.status_code, 302)  # 302 = redirect code
-# 
-#     # Use mock to patch the load_infile function so that we don't actually fire
-#     # the celery task. Have to patch the namespace that the module is imported
-#     # into
-#     @patch('upload.views.load_infile.delay')
-#     def test_write_to_db_view_post(self, _celery_mock):
-#         """
-#         Test that POST requests match the data types the user chooses for the 
-#         columns to the relevant header, then fire the load_infile task
-#         """
-# 
-#         test_s3_path = write_tempfile_to_s3(LOCAL_CSV, 'test')
-# 
-#         test_table_params = {
-#             'topic': 'Test topic',
-#             'db_name': 'import_tool_test',
-#             'source': 'Test source',
-#             'table_name': 'test_table_name'
-#         }
-#         test_headers = [{'name': 'income', 'category': None}, 
-#                         {'name': 'precinct_id', 'category': None}]
-# 
-#         session_data = {
-#             'table_params': test_table_params,
-#             's3_path': test_s3_path,
-#             'headers': test_headers
-#         }
-# 
-#         # Create the request object manually, since session handling for
-#         # Client() is messed up see https://code.djangoproject.com/ticket/10899
-#         # Set the user, session, and method manually
-#         request = self.factory.get(reverse('upload:write_to_db'))
-#         request.user = self.user
-#         request.session = session_data
-#         request.method = 'POST'
-# 
-#         # Add the POST data (the categories that the user added to the columns)
-#         test_data = {
-#             'income': 'first_name',
-#             'precinct_id': 'last_name'
-#         }
-#         request.POST = test_data
-# 
-#         # Now that we've populated the request with data, pass it to the 
-#         # view
-#         response = write_to_db(request)
-# 
-#         # Check that the mock celery task was fired and that the page returned
-#         self.assertTrue(_celery_mock.called)
-#         self.assertEqual(response.status_code, 200)
+class CategorizeViewTestCase(TestCase):
+    """
+    Test that the categorize view renders correctly when passed headers through
+    session storage
+    """
+    def setUp(self):
+        # Create a mock user so that we can access restricted pages
+        # without redirecting to /login/. Use RequestFactory to create a mock
+        # request object
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='jonathan',
+                                 email='jonathan.cox.c@gmail.com',
+                                 password='mock_pw')
+
+    def test_categorize_view_get(self):
+        request = self.factory.get(reverse('upload:categorize'))
+        request.user = self.user
+        request.session = {'headers': ['col_1', 'col_2', 'col_3']}
+
+        response = categorize(request)
+        self.assertEqual(response.status_code, 200)
+
+
+class WriteToDBTestCase(TestCase):
+    """
+    Test that the write_to_db view, when passed an array of header types,
+    assigns the types to the correct headers, generates a DB schema, and starts
+    a celery task that executes a LOAD DATA INFILE statement to add the data to
+    the MySQL DB
+    """
+    def setUp(self):
+        # Create a mock user so that we can access restricted pages
+        # without redirecting to /login/
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='jonathan',
+                                 email='jonathan.cox.c@gmail.com',
+                                 password='mock_pw')
+
+        self.client.login(username='jonathan', password='mock_pw')
+
+    def _celery_task_mock(self):
+        task = {'id': 1234}
+        return task
+
+    def test_write_to_db_view_get(self):
+        """
+        GET requests should redirect to index
+        """
+        response = self.client.get(reverse('upload:write_to_db'))
+        self.assertEqual(response.status_code, 302)  # 302 = redirect code
+
+    # Use mock to patch the load_infile function so that we don't actually fire
+    # the celery task. Have to patch the namespace that the module is imported
+    # into
+    @patch('upload.views.load_infile.delay')
+    def test_write_to_db_view_post(self, _celery_mock):
+        """
+        Test that POST requests match the data types the user chooses for the 
+        columns to the relevant header, then fire the load_infile task
+        """
+
+        test_s3_path = LOCAL_CSV
+
+        test_table_params = {
+            'topic': 'Test topic',
+            'db_name': 'import_tool_test',
+            'source': 'Test source',
+            'table_name': 'test_table_name'
+        }
+        test_headers = [{'name': 'income', 'category': None}, 
+                        {'name': 'precinct_id', 'category': None}]
+
+        session_data = {
+            'table_params': test_table_params,
+            's3_path': test_s3_path,
+            'headers': test_headers
+        }
+
+        # Create the request object manually, since session handling for
+        # Client() is messed up see https://code.djangoproject.com/ticket/10899
+        # Set the user, session, and method manually
+        request = self.factory.get(reverse('upload:write_to_db'))
+        request.user = self.user
+        request.session = session_data
+        request.method = 'POST'
+
+        # Add the POST data (the categories that the user added to the columns)
+        test_data = {
+            'income': 'first_name',
+            'precinct_id': 'last_name'
+        }
+        request.POST = test_data
+
+        # Now that we've populated the request with data, pass it to the 
+        # view
+        response = write_to_db(request)
+
+        # Check that the mock celery task was fired and that the page returned
+        self.assertTrue(_celery_mock.called)
+        self.assertEqual(response.status_code, 200)
 
 class LoadInfileTestCase(TestCase):
     @patch('upload.tasks.boto3.Session')
