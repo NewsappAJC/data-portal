@@ -365,14 +365,6 @@ class CheckTaskStatusTestCase(TestCase):
 
     @patch('upload.views.AsyncResult')
     def test_generate_metadata_models(self, mock_response):
-        # Mock return values for AsyncResult
-        mock_response.return_value.status = 'SUCCESS'
-        mock_response.return_value.result = {'table': 'govt_contract_llcs',
-                                             'url': 'http://test-url.com',
-                                             'error': None,
-                                             'warnings': ''}
-
-
         # Create some mock data about the columns and add it to the session
         test_header_1 = {'name': 'company',
                          'category': 'organization_name',
@@ -385,6 +377,15 @@ class CheckTaskStatusTestCase(TestCase):
                          'length': 20}
 
         test_headers = [test_header_1, test_header_2]
+
+        # Mock return values for AsyncResult
+        mock_response.return_value.status = 'SUCCESS'
+        mock_response.return_value.result = {'table': 'govt_contract_llcs',
+                                             'url': 'http://test-url.com',
+                                             'error': None,
+                                             'warnings': '',
+                                             'headers': [test_header_1, test_header_2]}
+
 
         # Set some basic parameters for the request
         request = self.factory.get(reverse('upload:check_status'))
@@ -416,7 +417,6 @@ class CheckTaskStatusTestCase(TestCase):
         x = Table.objects.get(table='govt_contract_llcs')
         y = x.column_set.get(column='company')
 
-        self.assertEqual(x.url, 'http://test-url.com')
         self.assertEqual(x.source, 'FEC')
         self.assertEqual(x.topic, 'Companies with government contracts')
         self.assertEqual(len(x.column_set.all()), 2)
