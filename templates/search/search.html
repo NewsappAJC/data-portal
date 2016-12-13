@@ -4,10 +4,12 @@
 <div class="row">
 
   <div class="col-sm-3 sidebar">
-    <table>
-      {{ form.as_table }}
-    </table>
-    <input class="btn btn-primary" type="submit" value="Search"/>
+    <form action="/search/" method="GET">
+      <table>
+        {{ form.as_table }}
+      </table>
+      <input class="btn btn-primary" type="submit" value="Search"/>
+    </form>
   </div><!--sidebar-->
 
   <div class="col-sm-9">
