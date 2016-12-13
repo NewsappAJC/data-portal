@@ -50,7 +50,7 @@ def get_column_types(filepath, headers):
         else:
             clean_length = None
 
-        headers[i]['datatype'] = clean_type
+        headers[i]['datatype'] = clean_type.lower()
         headers[i]['raw_type'] = raw_type
         headers[i]['length'] = clean_length
 
