@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 
 # Third-party imports
 from celery.result import AsyncResult
+from redis.exceptions import ConnectionError
 
 # Local imports
 from .forms import DataForm
@@ -125,8 +126,9 @@ def write_to_db(request):
         # (s3_path, db_name, table_name, columns)
         try:
             task = load_infile.delay(**cparams)
-        except ValueError as e:
-            messages.add_message(request, messages.ERROR, str(e))
+        except ConnectionError:
+            message = 'Unable to connect to the Redis server'
+            messages.add_message(request, messages.ERROR, message)
             return redirect(reverse('upload:index'))
 
         # We will use the id to poll Redis for task status in the
@@ -173,7 +175,7 @@ def check_task_status(request):
         params = request.session['table_params']
         t = Table(
             table=data['result']['table'],
-            url=data['result']['url'],
+            #url=data['result']['url'],
             database=params['db_name'],
             topic=params['topic'],
             user=request.user,
@@ -187,11 +189,12 @@ def check_task_status(request):
         # some is returned by the task. Both store the columns in the same
         # order.
         for i, header in enumerate(request.session['headers']):
+            h = data['result']['headers'][i]
             c = Column(table=t,
                        column=header['name'],
-                       mysql_type=header['datatype'],
+                       mysql_type=h['datatype'],
                        information_type=header['category'],
-                       column_size=header['length'])
+                       column_size=h['length'])
             c.save()
 
     # If response isn't JSON serializable it's an error message. Convert it to
