@@ -13,9 +13,10 @@ from mock import patch
 import botocore
 
 # Local module imports
-from .views import write_to_db, categorize
+from .views import write_to_db, categorize, check_task_status
 from .utils import (check_duplicates, clean)
 from .tasks import load_infile
+from .models import Table
 
 # Constants
 LOCAL_CSV = os.path.join(settings.BASE_DIR, 'upload', 'test_files', 'vote_data.csv')
@@ -355,4 +356,70 @@ class LoadInfileTestCase(TestCase):
         query = 'CREATE TABLE test (total_income FLOAT, precinct_id VARCHAR(5), tract_id VARCHAR(20), race VARCHAR(8), households INTEGER);'
         self.assertEqual(data.result['create_table_query'], query)
 
+class CheckTaskStatusTestCase(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='jonathan',
+                                 email='jonathan.cox.c@gmail.com',
+                                 password='mock_pw')
+
+    @patch('upload.views.AsyncResult')
+    def test_generate_metadata_models(self, mock_response):
+        # Mock return values for AsyncResult
+        mock_response.return_value.status = 'SUCCESS'
+        mock_response.return_value.result = {'table': 'govt_contract_llcs',
+                                             'url': 'http://test-url.com',
+                                             'error': None,
+                                             'warnings': ''}
+
+
+        # Create some mock data about the columns and add it to the session
+        test_header_1 = {'name': 'company',
+                         'category': 'organization_name',
+                         'datatype': 'varchar',
+                         'length': 10}
+
+        test_header_2 = {'name': 'CEO',
+                         'category': 'corp_or_person_name',
+                         'datatype': 'varchar',
+                         'length': 20}
+
+        test_headers = [test_header_1, test_header_2]
+
+        # Set some basic parameters for the request
+        request = self.factory.get(reverse('upload:check_status'))
+        request.user = self.user
+        request.method = 'POST'
+
+        test_headers = [test_header_1, test_header_2]
+
+        test_table_params = {
+            'topic': 'Companies with government contracts',
+            'db_name': 'user_jcox',
+            'source': 'FEC',
+        }
+
+        session_data = {
+            'table_params': test_table_params,
+            'headers': test_headers,
+            'task_id': 000
+        }
+
+        request.session = session_data
+
+        # Send the request to the view function so the models are generated and
+        # ensure that the server returns a response as JSON
+        response = check_task_status(request)
+        self.assertEqual(response._headers['content-type'][1], 'application/json')
+
+        # Check that the correct models are created
+        x = Table.objects.get(table='govt_contract_llcs')
+        y = x.column_set.get(column='company')
+
+        self.assertEqual(x.url, 'http://test-url.com')
+        self.assertEqual(x.source, 'FEC')
+        self.assertEqual(x.topic, 'Companies with government contracts')
+        self.assertEqual(len(x.column_set.all()), 2)
+        self.assertEqual(y.information_type, 'organization_name')
+        self.assertEqual(y.mysql_type, 'varchar')
 
