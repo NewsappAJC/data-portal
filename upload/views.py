@@ -67,7 +67,7 @@ def upload_file(request):
         else:
             # Setting safe to False is necessary to allow non-dict objects to
             # be serialized. To prevent XSS attacks make sure to escape the
-            # results on client side (I'm doing this). See django docs for
+            # text on the client side (the app does this). See django docs for
             # details about serializing non-dict objects
             return JsonResponse(
                 form.errors.as_json(escape_html=True),
@@ -160,6 +160,7 @@ def check_task_status(request):
     """
     p_id = request.session['task_id']
     response = AsyncResult(p_id)
+
     data = {
         'status': response.status,
         'result': response.result
@@ -185,12 +186,11 @@ def check_task_status(request):
         # Some of the data about each column is held in session storage,
         # some is returned by the task. Both store the columns in the same
         # order.
-        session_headers = request.session['headers']
-        for i, header in enumerate(data['result']['headers']):
+        for i, header in enumerate(request.session['headers']):
             c = Column(table=t,
-                       column=session_headers[i]['name'],
+                       column=header['name'],
                        mysql_type=header['datatype'],
-                       information_type=session_headers[i]['category'],
+                       information_type=header['category'],
                        column_size=header['length'])
             c.save()
 
