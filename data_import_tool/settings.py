@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'haystack',
     # Local apps
     'upload',
-    'search'
 ]
 
 MIDDLEWARE = [
@@ -159,6 +158,8 @@ HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 
 # Celery
 BROKER_URL = os.environ.get('REDIS_URL')
+BROKER_POOL_LIMIT = 0
+CELERY_REDIS_MAX_CONNECTIONS = 5 # Prevent Celery from creating too many clients
 CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
 if 'test' in sys.argv:
     CELERY_ALWAYS_EAGER = True  # Run Celery tasks in the same thread if testing
