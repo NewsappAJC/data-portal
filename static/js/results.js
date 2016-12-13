@@ -4,7 +4,7 @@ function getResult(cb) {
     url: '/check-task-status/',
     success: function(res) {
       if (cb(res) == 'incomplete') {
-        console.log('trying...')
+        // Poll the server every half second until a result is received
         setTimeout(getResult(checkResponseStatus), 500)
       }
     },
@@ -14,6 +14,10 @@ function getResult(cb) {
   });
 };
 
+// Poll the check_status view for progress on the load_infile task.
+// Once the task is complete, render a sample of the data uploaded and, if
+// necessary, any warnings that were returned. If the task fails, render an
+// error message explaining why
 function checkResponseStatus(res) {
     console.log(res)
     if (res.status == 'PROGRESS') {
@@ -23,6 +27,8 @@ function checkResponseStatus(res) {
     }
     else if (res.status === 'SUCCESS') {
       $('#progress-bar').removeClass('active')
+      // If a celery task ends its status is automatically SUCCESS, even if there
+      // was an error
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
         $('#progress-message').html('Error')
@@ -40,6 +46,7 @@ function checkResponseStatus(res) {
         return
       }
 
+      // If there isn't an error, fill the progress bar
       $('#progress-bar').css('width', '100%');
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
       $('#message').html(`
@@ -54,6 +61,7 @@ function checkResponseStatus(res) {
       $('#progress-message').html('Finished')
       generateTable(res.result);
 
+      // Append warnings
       if (res.result.warnings.length > 0) {
         warnings_html = res.result.warnings.map(function(w) {
           return `<li>${w}</li>`
@@ -83,6 +91,7 @@ function checkResponseStatus(res) {
     }
 }
 
+// Create a table with sample data
 function generateTable(res) {
   var rowData = res.data.slice(1)
   var headerData = res.data[0]
