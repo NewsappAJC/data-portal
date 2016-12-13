@@ -1,4 +1,7 @@
 window.onload = function() {
+  // If data is selected or entered in the DB select boxes, the other
+  // DB input field should be temporarily disabled. If the field is cleared,
+  // the other DB input can be re-enabled
   function checkAndDisable(input) {
     if (!!$(input).val()) {
       if ($(input).attr('id') == 'id_db_input') {
