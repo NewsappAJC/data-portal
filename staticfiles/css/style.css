@@ -1,0 +1,61 @@
+.main {
+  position: relative;
+  max-width: 1000px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+button.logout {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.cat-examples {
+  color: #999999;
+}
+
+.sql-error {
+  padding: 10px;
+}
+
+.errors {
+  color: #f27979
+}
+
+.message {
+  position: relative;
+  padding: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 10px;
+}
+
+#details {
+  overflow-x: auto;
+}
+
+.credit {
+  clear: both;
+  text-align: center;
+  padding: 40px;
+}
+
+.short {
+  width: 250px;
+}
+
+.sidebar {
+  background-color: #FAFAFA;
+}
+
+.or {
+  position: relative;
+  text-align: center;
+  transform: translateY(50%);
+}
+
+.db_holder {
+  position: relative;
+}
+
