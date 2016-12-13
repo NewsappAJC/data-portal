@@ -1,4 +1,4 @@
-{% extends "search/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
   <h2>Search</h2>
@@ -25,7 +25,7 @@
                   {{ result.object.user.username }}
               </p>
 
-              {% for col in result.object.table.column_set.all %}
+              {% for col in result.object.column_set.all %}
                 <p>
                   {{ col.column }}
                 </p>
