@@ -153,6 +153,8 @@ if es.username:
     auth_dict = {'http_auth': es.username + ':' + es.password}
     HAYSTACK_CONNECTIONS['default']['KWARGS'] = auth_dict
 
+# Update the search indexes every time the on_save signal is fired by the 
+# models
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 
 # Celery
