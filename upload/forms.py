@@ -98,17 +98,17 @@ class DataForm(forms.Form):
         return data
 
     data_file = forms.FileField(label='File')
-    table_name = forms.CharField(label='Table name', max_length=100)
-    db_input = forms.CharField(label='Create a new database', max_length=100, required=False)
-    source = forms.CharField(label='Source', max_length=100, required=True)
-    topic = forms.CharField(label='Topic', max_length=100, required=True)
+    table_name = forms.CharField(label='Table name', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'New table name'}))
+    db_input = forms.CharField(label='Create a new database', max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': 'New database name'}))
+    source = forms.CharField(label='Source', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
+    topic = forms.CharField(label='Topic', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
     next_aquisition = forms.DateField(label='When to update data',
                                       widget=forms.SelectDateWidget,
                                       required=False)
     press_contact = forms.CharField(label='Press contact name',
                                     max_length=100,
-                                    required=False)
+                                    required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
     press_contact_number = forms.CharField(label='Press contact number',
-                                           max_length=100, required=False)
+                                           max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
     press_contact_email = forms.EmailField(label='Press contact email',
-                                           required=False)
+                                           required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))

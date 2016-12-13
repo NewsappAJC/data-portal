@@ -18,7 +18,7 @@
     <ul>
       {% for upload in uploads %}
         <li>
-          <a href="/search/"><div>{{upload.table}}</div></a>
+          <h4 class="table-title">{{upload.table}}</h4>
           <div class="timestamp">{{upload.upload_time}}</div>
           <div class="topic">Topic: {{upload.topic}}</div>
           <div><em>Uploaded by {{upload.user}}</em></div>
@@ -43,7 +43,8 @@
     <form enctype="multipart/form-data" class="form" id="upload-form" action="/" method="post">
     <input type="hidden" name="tempfile" id="tempfile"/>
       {% csrf_token %}
-        <div class="row">
+      <div class="row">
+        <div class="db-core-inputs">
           <div class="col-sm-8">
             <div class="form-group">
               <label>{{ form.data_file.label }}</label>
@@ -80,6 +81,30 @@
             </div>
             <!--To give the db-holder dimensions-->
             <div style="clear:both;"></div>
+          </div><!--db-holder-->
+        </div><!--db-core-inputs-->
+
+        <div class="db-metadata">
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label>{{ form.press_contact.label }}</label>
+              {{form.press_contact}}
+              <div class="errors"></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label>{{ form.press_contact_number.label }}</label>
+              {{form.press_contact_number}}
+              <div class="errors"></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label>{{ form.press_contact_email.label }}</label>
+              {{form.press_contact_email}}
+              <div class="errors"></div>
+            </div>
           </div>
 
           <div class="col-sm-6">
@@ -97,48 +122,25 @@
             </div>
           </div>
 
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact.label }}</label>
-              {{form.press_contact}}
-              <div class="errors"></div>
-            </div>
-          </div>
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact_number.label }}</label>
-              {{form.press_contact_number}}
-              <div class="errors"></div>
-            </div>
-          </div>
+        </div><!--db-metadata-->
+      </div><!--row-->
+    </form>
 
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact_email.label }}</label>
-              {{form.press_contact_email}}
-              <div class="errors"></div>
-            </div>
-          </div>
+    <div id="non-field-errors" class="errors"></div>
 
-        </div>
-
-      </form>
-
-      <div id="non-field-errors" class="errors"></div>
-
-      <div>
-        <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary">Submit</button>
-      </div>
+    <div>
+      <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary">Submit</button>
+    </div>
 
   </div><!--upload-form-holder-->
 
-{% if messages %}
-<div class="messages">
-  {% for message in messages %}
-    <p>{{ message }}</p>
-  {% endfor %}
-</div>
-{% endif %}
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+      <p>{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <script src="{% static "js/tmpResults.js"%}"></script>
 

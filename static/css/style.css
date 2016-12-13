@@ -46,7 +46,7 @@ button.logout {
 }
 
 .sidebar {
-  background-color: #FAFAFA;
+  border-right: 2px solid #EFEFEF;
 }
 
 .or {
@@ -59,3 +59,20 @@ button.logout {
   position: relative;
 }
 
+.db-core-inputs {
+  background-color: #EFEFEF;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.upload-form-holder {
+  padding-left: 40px;
+}
+
+.search-result-name {
+  margin-bottom: 0;
+}
+
+.search-result-columns {
+  margin-top: 10px;
+}
