@@ -49,16 +49,9 @@ def upload_file(request):
                 for chunk in inputf.chunks():
                     f.write(chunk)
 
-            # Store the table config in session storage so that other views can
-            # access it later.
-            db_input = form.cleaned_data['db_input']
-            db_select = form.cleaned_data['db_select']
-            db_name = db_input or db_select  # One will be null
-
             request.session['table_params'] = {
-                'topic': form.cleaned_data['topic'],
-                'db_name': db_name,
-                'source': form.cleaned_data['source'],
+                #'topic': form.cleaned_data['topic'],
+                #'source': form.cleaned_data['source'],
                 'table_name': table_name,
             }
 
@@ -131,7 +124,6 @@ def write_to_db(request):
 
         # Begin load data infile query as a separate task so it doesn't slow
         # response load_infile accepts the following arguments:
-        # (s3_path, db_name, table_name, columns)
         try:
             task = load_infile.delay(**cparams)
         except ConnectionError:
@@ -180,14 +172,13 @@ def check_task_status(request):
     # Django DB. Find a way to make sure this database reflects changes to the
     if data['status'] == 'SUCCESS' and not data['result']['error']:
         # Create a table object in the Django DB
-        params = request.session['table_params']
+        # params = request.session['table_params']
         t = Table(
             table=data['result']['table'],
             #url=data['result']['url'],
-            database=params['db_name'],
-            topic=params['topic'],
+            #topic=params['topic'],
             user=request.user,
-            source=params['source'],
+            #source=params['source'],
             upload_log=data['result']['warnings'],
             path=data['result']['final_s3_path']
         )
@@ -197,13 +188,13 @@ def check_task_status(request):
         # Some of the data about each column is held in session storage,
         # some is returned by the task. Both store the columns in the same
         # order.
-        for i, header in enumerate(request.session['headers']):
-            h = data['result']['headers'][i]
+        for i, session_header in enumerate(request.session['headers']):
+            task_header = data['result']['headers'][i]
             c = Column(table=t,
-                       column=header['name'],
-                       mysql_type=h['datatype'],
-                       information_type=header['category'],
-                       column_size=h['length'])
+                       column=session_header['name'],
+                       mysql_type=task_header['datatype'],
+                       information_type=session_header['category'],
+                       column_size=task_header['length'])
             c.save()
 
     # If response isn't JSON serializable it's an error message. Convert it to
@@ -215,19 +206,21 @@ def check_task_status(request):
         return JsonResponse(data)
 
 
-def get_presigned_url(request, path):
-    try:
-        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
-                              aws_secret_access_key=settings.AWS_SECRET_KEY)
-    except botocore.exceptions.ClientError as e:
-        messages.add_message(request, messages.ERROR, str(e))
-        return
+def get_presigned_url(request):
+    if request.method == 'POST':
+        path = request.POST['path']
+        try:
+            client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
+                                  aws_secret_access_key=settings.AWS_SECRET_KEY)
+        except botocore.exceptions.ClientError as e:
+            return JsonResponse(str(e))
 
-    p = {'Bucket': BUCKET_NAME, 'Key': path}
-    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
+        p = {'Bucket': BUCKET_NAME, 'Key': path}
+        url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
 
-    return url
+        return JsonResponse(url)
 
+    return redirect(reverse('upload:index'))
 
 def logout_user(request):
     """
