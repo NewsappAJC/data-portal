@@ -1,15 +1,8 @@
 # Standard library imports
 import re
-import os
 
 # Third party imports
 from django import forms
-
-# Local module imports
-import sqlalchemy
-
-# Constants
-URL = os.environ['DATA_WAREHOUSE_URL']
 
 REPORTERS = (
     ('Jonathan Cox', 'Jonathan Cox'),
@@ -33,22 +26,6 @@ class DataForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(DataForm, self).__init__(*args, **kwargs)
 
-        # Get database options
-        engine = sqlalchemy.create_engine(URL)
-        connection = engine.connect()
-        data = connection.execute('SHOW DATABASES;')
-
-        databases = [[None, 'None selected']]
-        for db in data:
-            pair = list(db)
-            pair.extend(list(db))
-            databases.append(pair)
-
-        self.fields['db_select'] = forms.ChoiceField(label='Select a database',
-                                                     choices=databases,
-                                                     initial=None,
-                                                     required=False)
-
         # Set Bootstrap classes on form inputs
         for field in self.fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
@@ -63,17 +40,6 @@ class DataForm(forms.Form):
             )
         return data
 
-    # Customize the clean method to check that one and only one of the two DB
-    # inputs contains valid data
-    def clean(self):
-        cleaned_data = super(DataForm, self).clean()
-        db_input = cleaned_data.get('db_input')
-        db_select = cleaned_data.get('db_select')
-
-        if not db_input and not db_select:
-            raise forms.ValidationError(
-                'Please select a database or input a new database name.')
-
     # Ensure that the file isn't >10MB.
     def clean_data_file(self):
         data = self.cleaned_data['data_file']
@@ -87,28 +53,21 @@ class DataForm(forms.Form):
             )
         return data
 
-    # Prevent SQL injection by escaping any data that will be passed as
-    # parameters to the raw SQL query
-    def clean_db_input(self):
-        data = self._sanitize(self.cleaned_data['db_input'])
-        return data
-
     def clean_table_name(self):
         data = self._sanitize(self.cleaned_data['table_name'])
         return data
 
     data_file = forms.FileField(label='File')
     table_name = forms.CharField(label='Table name', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'New table name'}))
-    db_input = forms.CharField(label='Create a new database', max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': 'New database name'}))
-    source = forms.CharField(label='Source', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
-    topic = forms.CharField(label='Topic', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
-    next_aquisition = forms.DateField(label='When to update data',
-                                      widget=forms.SelectDateWidget,
-                                      required=False)
-    press_contact = forms.CharField(label='Press contact name',
-                                    max_length=100,
-                                    required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
-    press_contact_number = forms.CharField(label='Press contact number',
-                                           max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
-    press_contact_email = forms.EmailField(label='Press contact email',
-                                           required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))
+#     source = forms.CharField(label='Source', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
+#     topic = forms.CharField(label='Topic', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
+#     next_aquisition = forms.DateField(label='When to update data',
+#                                       widget=forms.SelectDateWidget,
+#                                       required=False)
+#     press_contact = forms.CharField(label='Press contact name',
+#                                     max_length=100,
+#                                     required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
+#     press_contact_number = forms.CharField(label='Press contact number',
+#                                            max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
+#     press_contact_email = forms.EmailField(label='Press contact email',
+#                                            required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))
