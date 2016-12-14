@@ -133,23 +133,20 @@ def copy_final_s3(tmp_path, db_name, table_name):
     s3 = start_s3_session()
 
     # Compose a key name
-    stem = '{db_name}/{table}-{today}'.format(db_name=db_name,
+    stem = '{db_name}/{today}_{table}'.format(db_name=db_name,
                                               table=table_name,
                                               today=date.today().isoformat())
 
-    temp_path = '{stem}/original/{table}.csv'.format(stem=stem,
+    path = '{stem}/original/{table}.csv'.format(stem=stem,
                                                      table=table_name)
 
     # Check if a directory with the same name already exists in the
     # S3 bucket, and if so change the key.
-    unique_stem = check_duplicates(temp_path)
-
-    final_path = '{stem}/original/{table}.csv'.format(stem=unique_stem,
-                                                      table=table_name)
+    unique_path = check_duplicates(path)
 
     # Write the file to Amazon S3 and delete the temporary file
     copy_source = BUCKET_NAME + '/' + tmp_path
-    s3.Object(BUCKET_NAME, final_path).copy_from(CopySource=copy_source)
+    s3.Object(BUCKET_NAME, unique_path).copy_from(CopySource=copy_source)
     s3.Object(BUCKET_NAME, tmp_path).delete()
 
     # Generate a README file
@@ -169,18 +166,7 @@ def copy_final_s3(tmp_path, db_name, table_name):
     # bucket.put_object(Key='{stem}/README.txt'.format(unique_stem),
     # Body=readme)
 
-    # Generate a presigned URL so that reporters who don't have access to the
-    # AWS account can still access the data
-    try:
-        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
-                              aws_secret_access_key=settings.AWS_SECRET_KEY)
-    except botocore.exceptions.ClientError:
-        return
-
-    p = {'Bucket': BUCKET_NAME, 'Key': final_path}
-    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
-
-    return url
+    return unique_path
 
 
 def write_tempfile_to_s3(local_path, table_name):
