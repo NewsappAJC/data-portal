@@ -10,6 +10,7 @@ class Table(models.Model):
     topic = models.CharField(max_length=300, blank=True)
     upload_time = models.DateTimeField(auto_now_add=True)
     upload_log = models.TextField(blank=True)
+    path = models.CharField(max_length=500)
     source = models.CharField(max_length=300, blank=False, null=False)
     next_update = models.DateField(blank=True, null=True)
 
