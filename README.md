@@ -46,7 +46,11 @@ This tool needs access to a Django database where it can store metadata about ea
 
 * AWS_ACCESS_KEY, AWS_SECRET_KEY
 
-  Format: Your access key and secret key for the AWS bucket that will be updated by the app.
+  Your access key and secret key for the AWS bucket that will be updated by the app.
+
+* SEARCH_URL
+
+  The URL of your ElasticSearch server
 
 Development
 ---
