@@ -1,9 +1,7 @@
 # Python standard lib imports
-# import pdb
 import os
 from datetime import date
 import re
-# import pdb
 
 # Django imports
 from django.conf import settings
@@ -126,16 +124,15 @@ def get_column_names(filepath):
     return headers
 
 
-def copy_final_s3(tmp_path, db_name, table_name):
+def copy_final_s3(tmp_path, table_name):
     """
     Copy the original CSV file from the tmp bucket to its permanent home on s3
     """
     s3 = start_s3_session()
 
     # Compose a key name
-    stem = '{db_name}/{today}_{table}'.format(db_name=db_name,
-                                              table=table_name,
-                                              today=date.today().isoformat())
+    today = date.today().isoformat()
+    stem = '{today}_{table}'.format(table=table_name, today=today)
 
     path = '{stem}/original/{table}.csv'.format(stem=stem,
                                                      table=table_name)
