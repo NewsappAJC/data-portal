@@ -1,3 +1,6 @@
+# Standard library imports
+import os
+
 # Django imports
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
@@ -5,10 +8,13 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 
 # Third-party imports
 from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
+import boto3
+import botocore
 
 # Local imports
 from .forms import DataForm
@@ -17,6 +23,8 @@ from .utils import get_column_names, write_tempfile_to_s3
 # Have to do an absolute import below because of how celery resolves paths.
 from upload.tasks import load_infile
 
+# Constants
+BUCKET_NAME = os.environ.get('S3_BUCKET')
 
 @login_required
 def upload_file(request):
@@ -180,7 +188,8 @@ def check_task_status(request):
             topic=params['topic'],
             user=request.user,
             source=params['source'],
-            upload_log=data['result']['warnings']
+            upload_log=data['result']['warnings'],
+            path=data['result']['final_s3_path']
         )
         t.save()
 
@@ -206,9 +215,23 @@ def check_task_status(request):
         return JsonResponse(data)
 
 
+def get_presigned_url(request, path):
+    try:
+        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
+                              aws_secret_access_key=settings.AWS_SECRET_KEY)
+    except botocore.exceptions.ClientError as e:
+        messages.add_message(request, messages.ERROR, str(e))
+        return
+
+    p = {'Bucket': BUCKET_NAME, 'Key': path}
+    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
+
+    return url
+
+
 def logout_user(request):
     """
-    Use django's default logout function to logout the user
+    Use django's default logout function to log the user out
     """
     logout(request)
     messages.add_message(request, messages.ERROR, 'You have been logged out')
