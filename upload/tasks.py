@@ -3,11 +3,11 @@ from __future__ import absolute_import
 import os
 import re
 import warnings
+from urlparse import urlparse
 
 # Third party imports
 import sqlalchemy
 from sqlalchemy import exc # error handling
-from sqlalchemy.sql import text # protect from SQL injection
 from celery import shared_task
 import boto3
 import botocore
@@ -18,7 +18,7 @@ from .utils import copy_final_s3
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = os.environ.get('DATA_WAREHOUSE_URL')
+URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 
@@ -68,6 +68,7 @@ def forward(instance, step, message, total):
                                                   'total': total})
     return step
 
+
 def sanitize(string):
     """
     Substitute all non alphanumeric/underscore (_) characters with empty string
@@ -75,8 +76,9 @@ def sanitize(string):
     r = re.compile(r'\W')
     return re.sub(r, '', string)
 
+
 @shared_task(bind=True)
-def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
+def load_infile(self, s3_path, table_name, columns):
     """
     A celery task that accesses a database and executes a LOAD DATA INFILE 
     query to load the csv into it.
@@ -103,7 +105,11 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
 
-    step = forward(self, step, 'Inferring datatype of columns. This can take a while', total)
+    # Get the DB name from the URL. Baffled as to why SQLAlchemy doesn't
+    # provide a way to do this from the connection
+    db_name = urlparse(str(engine.url)).path.strip('/')
+
+    step = forward(self, step, 'Inferring datatype of columns', total)
     columnsf = get_column_types(local_path, columns)
 
     # Convert column types back to strings for use in the create table statement
@@ -112,11 +118,8 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
         'table': table_name,
         'columns': (', ').join(stypes),
         'path': local_path,
-        'db': db_name,
+        'db_name': db_name
     }
-
-    # Sanitize DB input once more. Table name, path, and columns already sanitized
-    sql_args['db'] = sanitize(sql_args['db'])
 
     # TODO change line endings to accept \r\n as well, if necessary
     # We've sanitized inputs to avoid risk of SQL injection. For explanation
@@ -124,7 +127,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     # http://stackoverflow.com/questions/40249590/sqlalchemy-error-when-adding-parameter-to-string-sql-query
     create_table_query = 'CREATE TABLE {table} ({columns});'.format(**sql_args)
     load_data_query = """
-        LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db}.{table}
+        LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db_name}.{table}
         FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
         IGNORE 1 LINES;
         """.format(**sql_args)
@@ -141,14 +144,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
             # Check if a database with the given name exists. If it doesn't, create one.
             step = forward(self, step, 'Connecting to database {}'.format(db_name), total)
 
-            databases = [d[0] for d in connection.execute(text('SHOW DATABASES;'))]
-            if db_name not in databases:
-                connection.execute('CREATE DATABASE {name}'.format(name=sql_args['db']), total)
-
-            connection.execute('USE {name}'.format(name=sql_args['db']))
-
-            # Create the table. This raises an error if a table with that names
-            # already exists in the database
+            # Create the table. This raises an error if a table with that name
             step = forward(self, step, 'Creating table', total)
             connection.execute(create_table_query)
 
@@ -169,13 +165,13 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
-    final_s3_path = copy_final_s3(s3_path, db_name, table_name)
+    final_s3_path = copy_final_s3(s3_path, table_name)
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
     # so that it can be accessed by other views
     step = forward(self, step, 'Querying the table for preview data', total)
-    data = connection.execute('SELECT * FROM {db}.{table}'.format(**sql_args))
+    data = connection.execute('SELECT * FROM {db_name}.{table}'.format(**sql_args))
 
     dataf = []
     dataf.append([x for x in data.keys()])
@@ -184,7 +180,6 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
     return {'error': False,
         'table': table_name,
         'final_s3_path': final_s3_path,
-        'db': db_name,
         'data': dataf,
         'headers': columns,
         'warnings': sql_warnings,
