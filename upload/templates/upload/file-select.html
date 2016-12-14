@@ -44,6 +44,7 @@
     <input type="hidden" name="tempfile" id="tempfile"/>
       {% csrf_token %}
       <div class="row">
+
         <div class="db-core-inputs">
           <div class="col-sm-8">
             <div class="form-group">
@@ -60,31 +61,9 @@
             </div>
           </div>
           <div style="clear:both;"></div>
-
-          <div class="db_holder">
-            <div class="col-sm-5">
-              <div class="form-group">
-                <label>{{ form.db_select.label }}</label>
-                {{form.db_select}}
-                <div class="errors"></div>
-              </div>
-            </div>
-            <div class="col-sm-1 or">
-              <h4>OR</h4>
-            </div>
-            <div class="col-sm-6">
-              <div class="form-group">
-                <label>{{ form.db_input.label }}</label>
-                {{form.db_input}}
-                <div class="errors"></div>
-              </div>
-            </div>
-            <!--To give the db-holder dimensions-->
-            <div style="clear:both;"></div>
-          </div><!--db-holder-->
         </div><!--db-core-inputs-->
 
-        <div class="db-metadata">
+        <div class="table-metadata">
           <div class="col-sm-4">
             <div class="form-group">
               <label>{{ form.press_contact.label }}</label>
@@ -122,7 +101,7 @@
             </div>
           </div>
 
-        </div><!--db-metadata-->
+        </div><!--table-metadata-->
       </div><!--row-->
     </form>
 
