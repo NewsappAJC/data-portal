@@ -169,7 +169,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
-    url = copy_final_s3(s3_path, db_name, table_name)
+    final_s3_path = copy_final_s3(s3_path, db_name, table_name)
 
     # Return a preview of the top few rows in the table
     # to check if the casting is correct. Save data to session
@@ -183,7 +183,7 @@ def load_infile(self, s3_path, db_name, table_name, columns, **kwargs):
 
     return {'error': False,
         'table': table_name,
-        'url': url,
+        'final_s3_path': final_s3_path,
         'db': db_name,
         'data': dataf,
         'headers': columns,
