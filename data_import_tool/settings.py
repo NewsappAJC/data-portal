@@ -120,7 +120,7 @@ LOGIN_REDIRECT_URL = '/'
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/New_York'
 
 USE_I18N = True
 
@@ -152,14 +152,13 @@ if es.username:
     auth_dict = {'http_auth': es.username + ':' + es.password}
     HAYSTACK_CONNECTIONS['default']['KWARGS'] = auth_dict
 
-# Update the search indexes every time the on_save signal is fired by the 
-# models
+# Update the search indexes every time the on_save signal is fired
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 
 # Celery
 BROKER_URL = os.environ.get('REDIS_URL')
-BROKER_POOL_LIMIT = 0
-CELERY_REDIS_MAX_CONNECTIONS = 5 # Prevent Celery from creating too many clients
+BROKER_POOL_LIMIT = 0  # Prevent Celery from creating too many clients
+CELERY_REDIS_MAX_CONNECTIONS = 5
 CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
 if 'test' in sys.argv:
     CELERY_ALWAYS_EAGER = True  # Run Celery tasks in the same thread if testing
