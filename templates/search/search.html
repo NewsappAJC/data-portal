@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block resources %}
-<script src="js/search.js"></script>
+  <script src="{% static "js/search.js" %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -22,7 +23,9 @@
         <h1>Results <small>({{page.object_list|length}} found)</small></h1>
             {% for result in page.object_list %}
             <h3 class="search-result-name">
-              <button class="btn btn-default">Get S3 URL</button>
+              <button class="btn btn-default url-btn" data-id="{{result.object.id}}">
+                Get S3 URL
+              </button>
               {{ result.object.table }}
             </h3>
                 <small>

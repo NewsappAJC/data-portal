@@ -207,21 +207,20 @@ def check_task_status(request):
         return JsonResponse(data)
 
 
-def get_presigned_url(request):
-    if request.method == 'POST':
-        path = request.POST['path']
-        try:
-            client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
-                                  aws_secret_access_key=settings.AWS_SECRET_KEY)
-        except botocore.exceptions.ClientError as e:
-            return JsonResponse(str(e))
+def get_presigned_url(request, id):
+    table = Table.objects.get(id=id)
+    path = table.path
 
-        p = {'Bucket': BUCKET_NAME, 'Key': path}
-        url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
+    try:
+        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
+                              aws_secret_access_key=settings.AWS_SECRET_KEY)
+    except botocore.exceptions.ClientError as e:
+        return JsonResponse(str(e))
 
-        return JsonResponse(url)
+    p = {'Bucket': BUCKET_NAME, 'Key': path}
+    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
 
-    return redirect(reverse('upload:index'))
+    return JsonResponse(url)
 
 def logout_user(request):
     """
