@@ -117,10 +117,6 @@ def get_column_names(filepath):
         for i in range(len(sample_row)):
             headers[i]['sample_data'].append(str(sample_row[i]))
 
-    # Format the sample data for display
-    for h in headers:
-        h['sample_data'] = (', ').join(h['sample_data']) + ' ...'
-
     return headers
 
 

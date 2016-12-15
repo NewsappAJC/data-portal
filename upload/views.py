@@ -92,7 +92,8 @@ def categorize(request):
     context = {
         'headers': request.session['headers'],
         'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
-        'datatypes': Column.MYSQL_TYPE_CHOICES
+        'datatypes': Column.MYSQL_TYPE_CHOICES,
+        'range': range(3)
     }
 
     return render(request, 'upload/categorize.html', context)
