@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load get_item %}
 
 {% block resources %}
     <script src="{% static "js/tmpResults.js"%}"></script>
@@ -19,22 +20,34 @@
   <form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    {% for header in headers %}
-      <div class="form-group">
-        <label for="{{ header.name }}">{{ header.name }}</label>
-        <div class="cat-examples">
-          [
-            <span class="cat-example">{{ header.sample_data }}</span>
-          ]
-        </div>
-        <select class="form-control short" name="{{ header.name }}">
-          <option disabled selected value> -- Select a category -- </option>
-          {% for cat in ajc_categories %}
-            <option value="{{ cat.0 }}">{{ cat.1 }}</option>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          {% for header in headers %}
+          <th>
+            {{header.name}}
+            <select name="{{ header.name }}">
+              <option disabled selected value> -- Select a category -- </option>
+              {% for cat in ajc_categories %}
+                <option value="{{ cat.0 }}">{{ cat.1 }}</option>
+              {% endfor %}
+            </select>
+          </th>
           {% endfor %}
-        </select>
-      </div>
-    {% endfor %}
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for i in range %}
+          <tr>
+            {% for header in headers %}
+              <td>{{ header.sample_data|get_item:i }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
     <button 
       type="submit"
       class="btn btn-primary data-submit">Continue</button>
