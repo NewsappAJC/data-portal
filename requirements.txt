@@ -15,6 +15,7 @@ django-redis-cache==1.7.0
 django-toolbelt==0.0.1
 docutils==0.12
 elasticsearch==5.0.1
+elasticsearch-dsl<2.0.0
 funcsigs==1.0.2
 futures==3.0.5
 gunicorn==19.6.0
