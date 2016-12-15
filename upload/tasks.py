@@ -181,8 +181,9 @@ def load_infile(self, s3_path, table_name, columns):
         'table': table_name,
         'final_s3_path': final_s3_path,
         'data': dataf,
+        'db': db_name,
         'headers': columns,
         'warnings': sql_warnings,
-        'create_table_query': create_table_query
+        'query': create_table_query
     }
 
