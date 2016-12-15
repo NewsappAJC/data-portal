@@ -76,3 +76,7 @@ button.logout {
 .search-result-columns {
   margin-top: 10px;
 }
+
+.sql-type {
+  color: #999999;
+}

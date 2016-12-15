@@ -52,7 +52,7 @@ function checkResponseStatus(res) {
       $('#message').html(`
         <div class="alert alert-success">
           <p>Table <strong>${res.result.table}</strong> 
-            was written to the <strong>${res.result.db}</strong> database.</p>
+            was loaded into the <strong>${res.result.db}</strong> database.</p>
           <p>
             <a href="/" class="alert-link">Go back to the upload form</a>
           </p>
@@ -97,7 +97,12 @@ function generateTable(res) {
   var headerData = res.data[0]
 
   var headers = headerData.map(function(header, i) {
-      return `<th>${header}</th>`
+    return (`
+      <th>
+        ${header}
+        <span class="sql-type">${res.headers[i]['raw_type']}</span>
+      </th>
+    `)
   });
 
   var rows = rowData.map(function(row, i) {
