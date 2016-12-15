@@ -2,4 +2,6 @@
 .env
 staticfiles/
 
+dump.rdb
+
 rds/amazon-rds-ca-cert.pem
