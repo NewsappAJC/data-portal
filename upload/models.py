@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 
 class Table(models.Model):
     user = models.ForeignKey(User)
-    database = models.CharField(max_length=300)
     table = models.CharField(max_length=300)
     topic = models.CharField(max_length=300, blank=True)
     upload_time = models.DateTimeField(auto_now_add=True)
