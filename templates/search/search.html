@@ -22,12 +22,14 @@
         {% if query %}
         <h1>Results <small>({{page.object_list|length}} found)</small></h1>
             {% for result in page.object_list %}
-            <h3 class="search-result-name">
-              <button class="btn btn-default url-btn" data-id="{{result.object.id}}">
-                Get S3 URL
-              </button>
-              {{ result.object.table }}
-            </h3>
+                <h3 class="search-result-name">
+                  <button class="btn btn-default url-btn" data-id="{{result.object.id}}">
+                    Get S3 URL
+                  </button>
+                  <a href="/detail/{{result.object.id}}/">
+                  {{ result.object.table }}
+                  </a>
+                </h3>
                 <small>
                   Uploaded by {{result.object.user.username}}
                   on {{result.object.upload_time}}
