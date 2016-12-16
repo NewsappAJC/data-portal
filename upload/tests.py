@@ -24,7 +24,7 @@ LOCAL_CSV = os.path.join(settings.BASE_DIR, 'upload', 'test_files', 'vote_data.c
 # -----------------------------------------------------------------------------
 # BEGIN MOCK CLASSES.
 # Use these as patches if you want to mock a connection to S3 or the MySQL
-# DB without actually executing queries.
+# DB without actually connecting
 # -----------------------------------------------------------------------------
 class MockS3Bucket(object):
     """
