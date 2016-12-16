@@ -4,6 +4,9 @@ import re
 # Third party imports
 from django import forms
 
+# Local imports
+from .models import Contact
+
 REPORTERS = (
     ('Jonathan Cox', 'Jonathan Cox'),
     ('Jeff Ernsthausen', 'Jeff Ernsthausen'),
@@ -58,16 +61,23 @@ class DataForm(forms.Form):
         return data
 
     data_file = forms.FileField(label='File')
-    table_name = forms.CharField(label='Table name', max_length=100, widget=forms.TextInput(attrs={'placeholder': 'New table name'}))
-#     source = forms.CharField(label='Source', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
-#     topic = forms.CharField(label='Topic', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
-#     next_aquisition = forms.DateField(label='When to update data',
-#                                       widget=forms.SelectDateWidget,
-#                                       required=False)
-#     press_contact = forms.CharField(label='Press contact name',
-#                                     max_length=100,
-#                                     required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
-#     press_contact_number = forms.CharField(label='Press contact number',
-#                                            max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
-#     press_contact_email = forms.EmailField(label='Press contact email',
-#                                            required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))
+    table_name = forms.CharField(label='Table name', max_length=100,
+                                 widget=forms.TextInput(attrs={'placeholder': 'New table name'}))
+    source = forms.CharField(label='Source', max_length=100, required=True,
+                             widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
+    topic = forms.CharField(label='Topic', max_length=100, required=True,
+                            widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
+    next_update = forms.DateField(label='When to update data',
+                                  widget=forms.SelectDateWidget,
+                                  required=False,
+                                  input_formats=['%m/%d/%Y'])
+    press_contact = forms.CharField(label='Press contact name',
+                                    max_length=100,
+                                    required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
+    press_contact_number = forms.CharField(label='Press contact number',
+                                           max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
+    press_contact_email = forms.EmailField(label='Press contact email',
+                                           required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))
+    press_contact_type = forms.ChoiceField(label='Press contact type',
+                                           choices=Contact.CONTACT_TYPE_CHOICES,
+                                           required=True)
