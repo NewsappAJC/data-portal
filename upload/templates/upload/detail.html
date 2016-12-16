@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+  <h1>
+  {{ table.table }}
+  </h1>
+  <em>Uploaded by {{table.user}} on {{table.upload_time}}</em> 
+  <h3>Source</h3>
+  <strong>Data provided by {{table.source}}</strong>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th>{{ header}}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          {% for cell in row %}
+            <td>{{cell}}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}
