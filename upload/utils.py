@@ -143,23 +143,6 @@ def copy_final_s3(tmp_path, table_name):
     s3.Object(BUCKET_NAME, unique_path).copy_from(CopySource=copy_source)
     s3.Object(BUCKET_NAME, tmp_path).delete()
 
-    # Generate a README file
-    # readme_template = open(os.path.join(settings.BASE_DIR,
-    #    config, 'readme_template'), 'r').read()
-
-    # readme = readme_template.format(topic=topic.upper(),
-    #    div='=' * len(topic),
-    #    reporter=reporter_name,
-    #    aq=next_aquisition,
-    #    owner=owner,
-    #    contact=press_contact,
-    #    number=press_contact_number,
-    #    email=press_contact_email)
-    #
-    # Write the README to the S3 bucket
-    # bucket.put_object(Key='{stem}/README.txt'.format(unique_stem),
-    # Body=readme)
-
     return unique_path
 
 
