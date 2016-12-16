@@ -18,7 +18,7 @@ $ pip install -r requirements.txt
 ```
 
 *ENVIRONMENTAL VARIABLES*
-This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. To establish these connections it's necessary to set a few environmental variables. All the necessary variables are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script. 
+This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. To establish these connections it's necessary to set a few environmental variables. All the necessary variables are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script. See details about how to configure the `postactivate` script at [virtualenvwrapper.readthedocs.io](http://virtualenvwrapper.readthedocs.io/en/latest/scripts.html)
 
 * DATABASE_URL
 

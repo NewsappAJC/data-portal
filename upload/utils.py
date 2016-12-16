@@ -91,12 +91,13 @@ def clean(names):
 def get_column_names(filepath):
     """
     Get column names and sample data from a CSV without loading the whole csv
-    into memory for display by the categorize view
+    into memory
     """
     sample_rows = []
     with open(filepath, 'r') as f:
         # Loop through lines to avoid reading the entire file into memory
         for i, line in enumerate(f):
+            # Split lines on commas. TODO handle other delimiters
             linef = line.split(',')
             # Generate our list of headers from the first row
             if i == 0:

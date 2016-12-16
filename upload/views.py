@@ -35,7 +35,7 @@ def upload_file(request):
     # Get form data, assign default values in case it's missing information.
     form = DataForm(request.POST or None, request.FILES or None)
 
-    # Get a list of most recent uploads to display in the sidebar
+    # Get a list of most recent uploads for display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
 
     if request.method == 'POST':
@@ -56,14 +56,15 @@ def upload_file(request):
             }
 
             # Write the CSV to a temporary file in the Amazon S3 bucket that
-            # we will retrieve later before uploading to the MySQL server
+            # we will retrieve later
             request.session['s3_path'] = write_tempfile_to_s3(path, table_name)
 
             headers = get_column_names(path)
             request.session['headers'] = headers
 
             # Return an empty HTTP Response to the AJAX request to let it know
-            # the request was successful.
+            # the request was successful. When the page receives a success
+            # header it will automatically redirect to the categorize view
             return HttpResponse(status=200)
 
         else:
@@ -86,8 +87,7 @@ def upload_file(request):
 @login_required
 def categorize(request):
     """
-    Prompt the user to select categories for each column in the data, then
-    begin upload task
+    Prompt the user to select categories for each column in the data.
     """
     context = {
         'headers': request.session['headers'],
@@ -109,24 +109,26 @@ def write_to_db(request):
         # We don't want to create a column for the csrf token so strip it out
         keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
         # Have to validate manually because we can't use a Django form class
-        # for a dynamically generated form. We force user to select a category
-        # for every header
-        if len(keys) < len(request.session['headers']):
+        # for a dynamically generated form. We force the user to select a
+        # category for every header, so if any of the headers don't have a 
+        # category selected, display an error message
+        headers = request.session['headers']
+
+        if len(keys) < len(headers):
             messages.add_message(request, messages.ERROR,
                                  'Please select a category for every column')
             return redirect(reverse('upload:categorize'))
 
-        headers = request.session['headers']
 
-        params = request.session['table_params']
-        cparams = {key: value for key, value in params.items()}
-        cparams['columns'] = headers
-        cparams['s3_path'] = request.session['s3_path']
+        table_params = request.session['table_params']
+        table_params['columns'] = headers
+        table_params['s3_path'] = request.session['s3_path']
 
-        # Begin load data infile query as a separate task so it doesn't slow
-        # response load_infile accepts the following arguments:
+        # Launch an asynchronous task for the potentially time-intensive job
+        # of executing the LOAD DATA INFILE statement
         try:
-            task = load_infile.delay(**cparams)
+            task = load_infile.delay(**table_params)
+        # TODO : should also handle the ValueError for failing to connect to S3
         except ConnectionError:
             message = 'Unable to connect to the Redis server'
             messages.add_message(request, messages.ERROR, message)
@@ -161,6 +163,8 @@ def check_task_status(request):
     return a sample of the data, and write metadata about upload to Django DB.
     If failed, return error message.
     """
+    # Use the ID of the async task saved in session storage to check the task
+    # status
     p_id = request.session['task_id']
     response = AsyncResult(p_id)
 
@@ -170,7 +174,7 @@ def check_task_status(request):
     }
 
     # If the task is successful, write information about the upload to the
-    # Django DB. Find a way to make sure this database reflects changes to the
+    # Django DB.
     if data['status'] == 'SUCCESS' and not data['result']['error']:
         # Create a table object in the Django DB
         # params = request.session['table_params']
@@ -198,8 +202,8 @@ def check_task_status(request):
                        column_size=task_header['length'])
             c.save()
 
-    # If response isn't JSON serializable it's an error message. Convert it to
-    # a string and return that instead
+    # If response isn't JSON serializable then it's an error message.
+    # Convert it to a string and return it
     try:
         return JsonResponse(data)
     except TypeError:

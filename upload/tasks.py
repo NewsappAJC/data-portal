@@ -58,8 +58,8 @@ def get_column_types(filepath, headers):
 
 def forward(instance, step, message, total):
     """
-    Send a msessage to the Redis server updating the state of the task so that
-    we can have an informative progress bar
+    Send a message to the Redis server updating the state of the task so that
+    we can have an informative, pretty progress bar
     """
     step += 1
     instance.update_state(state='PROGRESS', meta={'message': message,
@@ -81,8 +81,9 @@ def sanitize(string):
 def load_infile(self, s3_path, table_name, columns):
     """
     A celery task that accesses a database and executes a LOAD DATA INFILE 
-    query to load the csv into it.
+    query to load a CSV into it.
     """
+    # The total number of steps. Used to send progress reports back to the app
     total = 8
     step = forward(self, 0, 'Downloading data from Amazon S3', total)
 
@@ -96,17 +97,19 @@ def load_infile(self, s3_path, table_name, columns):
         local_path = os.path.join('/', s3_path)
         bucket.download_file(s3_path, local_path)
     except botocore.exceptions.ClientError:
-        raise ValueError('Unable to download temporary file from S3')
+        error_message = 'Upload failed. Unable to download temporary file from S3'
+        raise ValueError(error_message)
 
     # Keep track of progress
     step = forward(self, step, 'Connecting to MySQL server', total)
 
-    # Create a connection to the data warehouse 
+    # Create a connection to the data warehouse. Pass local_infile as a
+    # parameter so that the connection will accept LOAD INFILE statements
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
 
-    # Get the DB name from the URL. Baffled as to why SQLAlchemy doesn't
-    # provide a way to do this from the connection
+    # Get the DB name from the DATA_WAREHOUSE_URL env var. Baffled as to why
+    # SQLAlchemy doesn't provide a way to do this from the connection
     db_name = urlparse(str(engine.url)).path.strip('/')
 
     step = forward(self, step, 'Inferring datatype of columns', total)
@@ -133,9 +136,9 @@ def load_infile(self, s3_path, table_name, columns):
         """.format(**sql_args)
 
 
+    # Record all warnings raised by the writing to the MySQL DB. MySQL doesn't
+    # always raise exceptions for data truncation (?!)
     sql_warnings = []
-    # Record all warnings raised by the writing to the MySQL DB. SQLAlchemy doesn't
-    # always raise exceptions for data truncation, which is insane!
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
 
@@ -155,7 +158,6 @@ def load_infile(self, s3_path, table_name, columns):
         # General class that catches all sqlalchemy errors
         except exc.SQLAlchemyError as e:
             r = re.compile(r'\(.+?\)') # Grab only the relevant part of the warning
-            print str(e)
             return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
 
         # Write warnings to a list for that will be returned to the user
@@ -168,8 +170,7 @@ def load_infile(self, s3_path, table_name, columns):
     final_s3_path = copy_final_s3(s3_path, table_name)
 
     # Return a preview of the top few rows in the table
-    # to check if the casting is correct. Save data to session
-    # so that it can be accessed by other views
+    # to check that the casting was correct
     step = forward(self, step, 'Querying the table for preview data', total)
     data = connection.execute('SELECT * FROM {db_name}.{table}'.format(**sql_args))
 

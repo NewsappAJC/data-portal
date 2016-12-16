@@ -1,7 +1,8 @@
 *.pyc
 .env
+
 staticfiles/
+config/secrets.cfg
 
 dump.rdb
 
-rds/amazon-rds-ca-cert.pem
