@@ -86,6 +86,14 @@
             </div>
           </div>
 
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label>{{ form.press_contact_type.label }}</label>
+              {{form.press_contact_type}}
+              <div class="errors"></div>
+            </div>
+          </div>
+
           <div class="col-sm-6">
             <div class="form-group">
               <label>{{ form.topic.label }}</label>
@@ -97,6 +105,14 @@
             <div class="form-group">
               <label>{{ form.source.label }}</label>
               {{form.source}}
+              <div class="errors"></div>
+            </div>
+          </div>
+
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label>{{ form.next_update.label }}</label>
+              <input class="form-control" placeholder='mm/dd/yyyy'/>
               <div class="errors"></div>
             </div>
           </div>
