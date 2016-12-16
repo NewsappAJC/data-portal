@@ -78,7 +78,7 @@ def sanitize(string):
 
 
 @shared_task(bind=True)
-def load_infile(self, s3_path, table_name, columns):
+def load_infile(self, s3_path, table_name, columns, **kwargs):
     """
     A celery task that accesses a database and executes a LOAD DATA INFILE 
     query to load a CSV into it.
