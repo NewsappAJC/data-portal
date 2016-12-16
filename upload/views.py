@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+from urlparse import urlparse
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -11,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 
 # Third-party imports
+import sqlalchemy
 from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
 import boto3
@@ -18,13 +20,14 @@ import botocore
 
 # Local imports
 from .forms import DataForm
-from .models import Column, Table
+from .models import Column, Table, Contact
 from .utils import get_column_names, write_tempfile_to_s3
 # Have to do an absolute import below because of how celery resolves paths.
 from upload.tasks import load_infile
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
+URL = os.environ.get('DATA_WAREHOUSE_URL')
 
 @login_required
 def upload_file(request):
@@ -50,8 +53,13 @@ def upload_file(request):
                     f.write(chunk)
 
             request.session['table_params'] = {
-                #'topic': form.cleaned_data['topic'],
-                #'source': form.cleaned_data['source'],
+                'topic': form.cleaned_data['topic'],
+                'source': form.cleaned_data['source'],
+                'next_update': form.cleaned_data['next_update'],
+                'press_contact': form.cleaned_data['press_contact'],
+                'press_contact_number': form.cleaned_data['press_contact_number'],
+                'press_contact_email': form.cleaned_data['press_contact_email'],
+                'press_contact_type': form.cleaned_data['press_contact_type'],
                 'table_name': table_name,
             }
 
@@ -177,17 +185,27 @@ def check_task_status(request):
     # Django DB.
     if data['status'] == 'SUCCESS' and not data['result']['error']:
         # Create a table object in the Django DB
-        # params = request.session['table_params']
+        params = request.session['table_params']
         t = Table(
             table=data['result']['table'],
             #url=data['result']['url'],
-            #topic=params['topic'],
+            topic=params['topic'],
             user=request.user,
-            #source=params['source'],
+            source=params['source'],
             upload_log=data['result']['warnings'],
-            path=data['result']['final_s3_path']
+            path=data['result']['final_s3_path'],
+            next_update=params['next_update']
         )
         t.save()
+
+        c = Contact(
+            table=t,
+            name=params['press_contact'],
+            email=params['press_contact_email'],
+            phone=params['press_contact_number'],
+            contact_type=params['press_contact_type']
+        )
+        c.save()
 
         # Create column objects for each column in the table
         # Some of the data about each column is held in session storage,
@@ -209,6 +227,30 @@ def check_task_status(request):
     except TypeError:
         data['result'] = str(data['result'])
         return JsonResponse(data)
+
+def get_detail(request, id):
+    """
+    Get detailed information about a table uploaded to the MySQL database
+    """
+    table = Table.objects.get(id=id)
+
+    # Create a connection to the DB TODO Break this out into a utils function
+    engine = sqlalchemy.create_engine(URL)
+    connection = engine.connect()
+
+    db_name = urlparse(str(engine.url)).path.strip('/')
+    select_query = 'SELECT * FROM {db_name}.{table}'
+
+    data = connection.execute(select_query.format(db_name=db_name,
+                                                  table=table.table))
+
+    # TODO break this out into a separate function so the code isn't duplicated
+    dataf = []
+    dataf.append([x for x in data.keys()])
+    dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
+
+    context = {'table': table, 'headers': dataf[0], 'rows': dataf[1:]}
+    return render(request, 'upload/detail.html', context)
 
 
 def get_presigned_url(request, id):
