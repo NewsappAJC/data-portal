@@ -177,6 +177,8 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     dataf.append([x for x in data.keys()])
     dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
+    connection.close()
+
     return {'error': False,
         'table': table_name,
         'final_s3_path': final_s3_path,

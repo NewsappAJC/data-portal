@@ -1,8 +1,10 @@
 # Standard library imports
 import re
+import os
 
 # Third party imports
 from django import forms
+import sqlalchemy
 
 # Local imports
 from .models import Contact
@@ -34,7 +36,7 @@ class DataForm(forms.Form):
             self.fields[field].widget.attrs.update({'class': 'form-control'})
 
     # Internal method that checks for non-alphanumeric characters and raises an
-    # error if it encounters them
+    # error if it encounters any
     def _sanitize(self, data):
         r = re.compile(r'\W')
         if r.search(data) is not None:
@@ -43,7 +45,7 @@ class DataForm(forms.Form):
             )
         return data
 
-    # Ensure that the file isn't >10MB.
+    # Ensure that the file isn't >20MB.
     def clean_data_file(self):
         data = self.cleaned_data['data_file']
         if data._size > MAX_UPLOAD_SIZE:
@@ -57,6 +59,18 @@ class DataForm(forms.Form):
         return data
 
     def clean_table_name(self):
+        input_name = self.cleaned_data['table_name']
+
+        engine = sqlalchemy.create_engine(os.environ.get('DATA_WAREHOUSE_URL'))
+        connection = engine.connect()
+        names = [n[0] for n in connection.execute('SHOW TABLES;')]
+        if input_name in names:
+            raise forms.ValidationError(
+                'A table with that name already exists in the database.'
+            )
+
+        connection.close()
+
         data = self._sanitize(self.cleaned_data['table_name'])
         return data
 
