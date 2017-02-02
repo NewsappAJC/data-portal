@@ -5,4 +5,7 @@ staticfiles/
 config/secrets.cfg
 
 dump.rdb
+npm-debug.log
+
+*.sqlite3
 
