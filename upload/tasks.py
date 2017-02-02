@@ -136,7 +136,7 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
         """.format(**sql_args)
 
 
-    # Record all warnings raised by the writing to the MySQL DB. MySQL doesn't
+    # Record all warnings raised by writing to the MySQL DB. MySQL doesn't
     # always raise exceptions for data truncation (?!)
     sql_warnings = []
     with warnings.catch_warnings(record=True) as w:

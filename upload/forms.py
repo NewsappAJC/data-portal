@@ -20,7 +20,7 @@ DELIMITERS = (
 )
 
 # 10MB = 10485760
-MAX_UPLOAD_SIZE = 10485760
+MAX_UPLOAD_SIZE = 10485760 * 2
 
 
 class DataForm(forms.Form):
