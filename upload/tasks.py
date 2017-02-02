@@ -22,7 +22,6 @@ URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 
-
 def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
