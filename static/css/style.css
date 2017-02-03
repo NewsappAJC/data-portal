@@ -80,3 +80,26 @@ button.logout {
 .sql-type {
   color: #999999;
 }
+
+.form-group .row {
+  margin-top:15px;
+  margin-bottom:15px;
+  vertical-align: middle;
+}
+
+label {
+  vertical-align: middle;
+}
+
+.results {
+  border-bottom:1px solid #ccc;
+  padding:10px 0px;
+}
+
+table.preview-table {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 20px;
+    border-collapse: collapse;
+  }
