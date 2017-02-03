@@ -30,7 +30,7 @@
   {% for result in  results%}
   <div class="row result-item">
 
-    <div class="results-holder col-xs-12">
+    <div class="col-xs-12">
       <h3>
         Found records in <span class="table-title"> {{ result.table }} </span>
       </h3>
@@ -46,24 +46,26 @@
           </form>
       {% endif %}
 
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            {% for header in result.preview.headers %}
-              <th class="preview-header">{{ header }}</th>
+      <div class="results-holder">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              {% for header in result.preview.headers %}
+                <th class="preview-header">{{ header }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in result.preview.data %}
+            <tr>
+              {% for el in row %}
+                <td><span>{{ el }}</span></td>
+              {% endfor %}
+            </tr>
             {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in result.preview.data %}
-          <tr>
-            {% for el in row %}
-              <td><span>{{ el }}</span></td>
-            {% endfor %}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
   {% endfor %}
