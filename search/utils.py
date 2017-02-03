@@ -11,8 +11,8 @@ DATA_WAREHOUSE_URL = os.environ.get('DATA_WAREHOUSE_URL')
 # containing database information, columns searched and a SQLalchemy query result
 def table_search(query, table, search_columns, preview):
     sql_query = '''
-        select * from imports.{table}
-        where MATCH('{search_columns}')
+        SELECT * FROM imports.{table}
+        where MATCH({search_columns})
         AGAINST("{query}" IN BOOLEAN MODE)
         '''.format(table=table, search_columns=search_columns, query=query)
     
@@ -27,11 +27,11 @@ def table_search(query, table, search_columns, preview):
         result = { 'table' : table,
                    'search_columns' : search_columns}
         result['preview']={}
-        result['preview']['headers'] = search_result[0].keys()            
+        result['preview']['headers'] = search_result[0].keys()
 
         values = []
         for row in search_result:
-            values.append(row.values())            
+            values.append(row.values())
         result['preview']['data'] = values
     
     return result
@@ -43,22 +43,19 @@ def warehouse_search(query):
         #SQL statement below pulls unique database-table-columns combos
         #to feed into a search
         tables_to_search = connection.execute(
-            '''SELECT t.database, t.table,
-            CONCAT('`',
-                GROUP_CONCAT(c.column SEPARATOR '`,`'),'`'
-                ) AS search_columns
+            '''SELECT t.table,
+            CONCAT('`',GROUP_CONCAT(c.column SEPARATOR '`,`'),'`') AS search_columns
             FROM data_import_tool.upload_table t
             JOIN data_import_tool.upload_column c
             ON t.id=c.table_id
             WHERE RIGHT(c.information_type,4) = 'name'
-            GROUP BY 1,2''').fetchall()
+            GROUP BY 1''').fetchall()
 
         connection.close()
-        
+
         results = []
         for table in tables_to_search:
-            result = table_search(query,connection,table['database'],
-                                  table['table'],table['search_columns'],True)        
+            result = table_search(query, table['table'],table['search_columns'],True)
 
             if result:
                 results.append(result)

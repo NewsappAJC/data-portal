@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import sys
 import os
-from urlparse import urlparse
 
 import dj_database_url
 
@@ -39,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'django_extensions',
-    'haystack',
     # Local apps
     'upload',
     'search'
@@ -133,25 +131,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
-
-# Haystack
-es = urlparse(os.environ.get('SEARCH_URL') or 'http://127.0.0.1:9200')
-port = es.port or 80
-
-HAYSTACK_CONNECTIONS = {
-    'default': {
-        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
-        'URL': es.scheme + '://' + es.hostname + ':' + str(port),
-        'INDEX_NAME': 'documents'
-    }
-}
-
-if es.username:
-    auth_dict = {'http_auth': es.username + ':' + es.password}
-    HAYSTACK_CONNECTIONS['default']['KWARGS'] = auth_dict
-
-# Update the search indexes every time the on_save signal is fired
-HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 
 # Celery
 BROKER_URL = os.environ.get('REDIS_URL')

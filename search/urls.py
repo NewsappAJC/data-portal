@@ -5,7 +5,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    url(r'^search/', views.search),
+    url(r'^$', views.search),
     url(r'^show_full_dataset/$', views.show_full_dataset)
 ]
 
