@@ -11,12 +11,15 @@ def search(request):
 
     if request.method == 'POST':
         query = request.POST.get('query', None)
-        context['query'] = query
-        res = warehouse_search(query)
-        if not res:
-            context['error'] = 'No results found. Please try a different search.'
+        if not query:
+            context['error'] = 'Please enter a search term'
+
         else:
-            context['results'] = res
+            res = warehouse_search(query)
+            if not res:
+                context['error'] = 'No results found. Please try a different search.'
+            else:
+                context['results'] = res
 
     return render(request, 'search/search.html', context)
 

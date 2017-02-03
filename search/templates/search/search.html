@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block resources %}
+  <script type="text/javascript" src="{% static "js/search.js"%}"></script>
+{% endblock %}
 
 {% block content %}
 
 <form method="POST" class="form-horizontal" action="/search/">
 {% csrf_token %}
   <div class="form-group">
-    {% if error %}
-      <div class="row">
-        <span class="errors">{{ error }}</span>
-      </div>
-    {% endif %}
-
     <div class="row">
       <div class="col-sm-4">
         <label for="query" class="control-label">Enter a name:</label>
-        {% if query %}
-          <input type="text" class="form-control" name="query" placeholder={{ query }}>
-        {% else %}
-          <input type="text" class="form-control" name="query">
+        <input type="text" class="form-control" name="query">
+      </div>
+      <div class="col-sm-3">
+        {% if error %}
+          <div class="row">
+            <span class="errors" id="search-error">{{ error }}</span>
+          </div>
         {% endif %}
       </div>
     </div>
@@ -27,7 +27,7 @@
 
     <div class="row">
       <div class="col-sm-2">
-        <button class="btn btn-success" type="submit">Search</button>
+        <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
       </div>
     </div>
 
