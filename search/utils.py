@@ -13,7 +13,7 @@ def table_search(query, table, search_columns, preview):
     sql_query = '''
         SELECT * FROM imports.{table}
         where MATCH({search_columns})
-        AGAINST('{query}' IN BOOLEAN MODE)
+        AGAINST("{query}" IN BOOLEAN MODE)
         '''.format(table=table, search_columns=search_columns, query=query)
     
     if preview:
@@ -34,7 +34,11 @@ def table_search(query, table, search_columns, preview):
             values.append(row.values())
         result['preview']['data'] = values
     
-    return result
+        return result
+
+    else:
+        return None
+
 
 def warehouse_search(query):
     if len(query)>0:

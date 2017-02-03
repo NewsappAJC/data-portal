@@ -7,11 +7,20 @@
 <form method="POST" class="form-horizontal" action="/search/">
 {% csrf_token %}
   <div class="form-group">
+    {% if error %}
+      <div class="row">
+        <span class="errors">{{ error }}</span>
+      </div>
+    {% endif %}
 
     <div class="row">
       <div class="col-sm-4">
         <label for="query" class="control-label">Enter a name:</label>
-        <input type="text" class="form-control" name="query" placeholder={{ result.query }}>
+        {% if query %}
+          <input type="text" class="form-control" name="query" placeholder={{ query }}>
+        {% else %}
+          <input type="text" class="form-control" name="query">
+        {% endif %}
       </div>
     </div>
 
@@ -25,8 +34,8 @@
   </div>
 </form>
 
-<h3>Results</h3> 
 {% if results %}
+  <h3>Results</h3> 
   {% for result in  results%}
   <div class="row result-item">
 
