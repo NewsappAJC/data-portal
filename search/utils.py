@@ -61,7 +61,8 @@ def warehouse_search(query):
         for table in tables_to_search:
             result = table_search(query, table['table'],table['search_columns'],True)
             if result:
-                results.append({'result':result, 'id': table['id']})
+                result['id'] = int(table['id'])
+                results.append(result)
 
         return results
 
