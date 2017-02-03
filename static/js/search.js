@@ -15,11 +15,16 @@ window.onload = function() {
   };
   function main() {
     // DOM refs
-    var urlButtons = $('.url-btn');
+    var $urlButtons = $('.url-btn');
 
-    urlButtons.on('click', function() {
+    $urlButtons.on('click', function() {
       var id = this.dataset.id;
       getURL(id);
     })
+    $('#search-submit').on('click', function() {
+      $(this).button('loading');
+      $('#search-error').html('');
+    })
   }
+  main();
 };
