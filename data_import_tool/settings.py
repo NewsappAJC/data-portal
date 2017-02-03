@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'haystack',
     # Local apps
     'upload',
+    'search'
 ]
 
 MIDDLEWARE = [
