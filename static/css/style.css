@@ -96,10 +96,16 @@ label {
   padding:10px 0px;
 }
 
-table.preview-table {
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 20px;
-    border-collapse: collapse;
-  }
+.results-holder {
+  overflow: scroll;
+}
+
+.result-item {
+  margin-top: 40px;
+}
+
+.table-title {
+  background-color: #EFEFEF;
+  padding:2px;
+  text-decoration: underline;
+}
