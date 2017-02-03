@@ -52,6 +52,10 @@ This tool needs access to a Django database where it can store metadata about ea
 
   The URL of your ElasticSearch server
 
+$ SECRET_KEY
+
+  The secret key of your app
+
 Development
 ---
 Run dev server
