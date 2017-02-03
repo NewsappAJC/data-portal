@@ -47,7 +47,7 @@ def warehouse_search(query):
         #SQL statement below pulls unique database-table-columns combos
         #to feed into a search
         tables_to_search = connection.execute(
-            '''SELECT t.table,
+            '''SELECT t.table, t.id,
             CONCAT('`',GROUP_CONCAT(c.column SEPARATOR '`,`'),'`') AS search_columns
             FROM data_import_tool.upload_table t
             JOIN data_import_tool.upload_column c
@@ -60,9 +60,8 @@ def warehouse_search(query):
         results = []
         for table in tables_to_search:
             result = table_search(query, table['table'],table['search_columns'],True)
-
             if result:
-                results.append(result)
+                results.append({'result':result, 'id': table['id']})
 
         return results
 
