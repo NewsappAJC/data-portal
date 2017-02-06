@@ -75,6 +75,6 @@ def warehouse_search(query):
         return results
 
 def connect_to_db():
-    engine = create_engine(DATA_WAREHOUSE_URL, encoding='utf-8')
+    engine = create_engine(DATA_WAREHOUSE_URL)
     return engine.connect()
 
