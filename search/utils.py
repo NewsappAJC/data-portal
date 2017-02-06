@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 # Stdlib imports
 import os
 import re
@@ -37,7 +39,7 @@ def table_search(query, table, search_columns, preview):
 
         values = []
         for row in search_result:
-            values.append([str(x).encode('utf-8') for x in row.values() if x ])
+            values.append(row.values())
         result['preview']['data'] = values
     
         return result
