@@ -39,9 +39,7 @@
 
 {% if results %}
 
-  {% if not preview %}
-    <h3>Results for <span class="highlight">"{{query}}"</span></h3>
-  {% endif %}
+  <h3>Results for "<span class="highlight">{{query}}</span>"</h3>
 
   {% for result in  results%}
   <div class="row result-item">
@@ -55,9 +53,9 @@
         <div class="col-xs-2">
           <form method="POST" action="./show_full_dataset/">
               {% csrf_token %}
-              <input type="hidden" name="query" value={{ query }}>
-              <input type="hidden" name="table" value={{ result.table }}>
-              <input type="hidden" name="search_columns" value ={{ result.search_columns }}>
+              <input type="hidden" name="query" value="{{ query }}">
+              <input type="hidden" name="table" value="{{ result.table }}">
+              <input type="hidden" name="search_columns" value="{{ result.search_columns }}">
               <button class="btn btn-default" type="submit">See all records</button>
           </form>
         </div>

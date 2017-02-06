@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import os
 
 # Django imports
+from django.utils.html import escape
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.conf import settings
@@ -28,13 +29,15 @@ def search(request):
             context['error'] = 'Please enter a search term'
 
         else:
-            context['query'] = query
+            context['query'] = escape(query)
             res = warehouse_search(query)
             if not res:
                 context['error'] = '''No results found for "{}".'''.format(query)
             else:
                 context['results'] = res
 
+    import pdb
+    pdb.set_trace()
     return render(request, 'search/search.html', context)
 
 
