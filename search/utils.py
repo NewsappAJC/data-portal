@@ -37,7 +37,7 @@ def table_search(query, table, search_columns, preview):
 
         values = []
         for row in search_result:
-            values.append(row.values())
+            values.append([str(x).encode('utf-8') for x in row.values() if x ])
         result['preview']['data'] = values
     
         return result
