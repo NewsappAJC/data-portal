@@ -36,8 +36,6 @@ def search(request):
             else:
                 context['results'] = res
 
-    import pdb
-    pdb.set_trace()
     return render(request, 'search/search.html', context)
 
 
