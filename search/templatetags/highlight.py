@@ -18,7 +18,7 @@ def highlight(value, arg):
             after = g.group(3) or ''
             # Have to use smart_text() to ensure that unicode is encoded
             # properly
-            html = format_html(u'{}<span class="highlight">{}</span>{}', 
+            html = format_html('{}<span class="highlight">{}</span>{}', 
                                before,
                                match,
                                after)
