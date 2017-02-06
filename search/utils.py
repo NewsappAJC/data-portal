@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 # Stdlib imports
 import os
 import re
