@@ -81,7 +81,10 @@
             {% for row in result.preview.data %}
             <tr>
               {% for el in row %}
+              <td>{{el}}</td>
+              <!--
                 <td>{{ el|highlight:query }}</td>
+                -->
               {% endfor %}
             </tr>
             {% endfor %}
