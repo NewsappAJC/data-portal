@@ -9,14 +9,11 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 
 # Third-party imports
 import sqlalchemy
 from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
-import boto3
-import botocore
 
 # Local imports
 from .forms import DataForm
@@ -252,21 +249,6 @@ def get_detail(request, id):
     context = {'table': table, 'headers': dataf[0], 'rows': dataf[1:]}
     return render(request, 'upload/detail.html', context)
 
-
-def get_presigned_url(request, id):
-    table = Table.objects.get(id=id)
-    path = table.path
-
-    try:
-        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
-                              aws_secret_access_key=settings.AWS_SECRET_KEY)
-    except botocore.exceptions.ClientError as e:
-        return JsonResponse(str(e))
-
-    p = {'Bucket': BUCKET_NAME, 'Key': path}
-    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
-
-    return JsonResponse(url)
 
 def logout_user(request):
     """
