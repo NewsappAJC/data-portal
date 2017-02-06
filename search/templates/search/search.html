@@ -7,32 +7,42 @@
 
 {% block content %}
 
-{% if error %}
-  <div class="errors error-holder" id="search-error">{{ error }}</div>
+{% if not detail %}
+
+  {% if error %}
+    <div class="errors error-holder" id="search-error">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" class="form-horizontal" action="/search/">
+  {% csrf_token %}
+    <div class="form-group">
+      <div class="row">
+        <div class="col-sm-4">
+          <label for="query" class="control-label">Enter a name:</label>
+          <input type="text" class="form-control" name="query">
+        </div>
+      </div>
+
+
+      <div class="row">
+        <div class="col-sm-2">
+          <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
+        </div>
+      </div>
+
+    </div>
+  </form>
+
 {% endif %}
 
-<form method="POST" class="form-horizontal" action="/search/">
-{% csrf_token %}
-  <div class="form-group">
-    <div class="row">
-      <div class="col-sm-4">
-        <label for="query" class="control-label">Enter a name:</label>
-        <input type="text" class="form-control" name="query">
-      </div>
-    </div>
-
-
-    <div class="row">
-      <div class="col-sm-2">
-        <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
-      </div>
-    </div>
-
-  </div>
-</form>
+{% load highlight %}
 
 {% if results %}
-  <h3>Results</h3> 
+
+  {% if not preview %}
+    <h3>Results for <span class="highlight">"{{query}}"</span></h3>
+  {% endif %}
+
   {% for result in  results%}
   <div class="row result-item">
 
@@ -73,7 +83,7 @@
             {% for row in result.preview.data %}
             <tr>
               {% for el in row %}
-                <td><span>{{ el }}</span></td>
+                <td>{{ el|highlight:query }}</td>
               {% endfor %}
             </tr>
             {% endfor %}

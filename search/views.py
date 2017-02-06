@@ -19,7 +19,7 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 
 def search(request):
     results = []
-    context = {'results': results}
+    context = {'results': results, 'detail': False}
 
     if request.method == 'POST':
         query = request.POST.get('query', None)
@@ -62,9 +62,12 @@ def show_full_dataset(request):
         table = request.POST.get('table', None)
         search_columns = request.POST.get('search_columns', None)
         preview = False
-        print 'Query: {}'.format(query)
 
         results.append(table_search(query, table, search_columns, preview))
+        context = {'query': query, 'results': results, 'detail': True}
 
-    return render(request,'search/search.html', {'results': results})
+    else:
+        context = {'results': []}
+
+    return render(request,'search/search.html', context)
 
