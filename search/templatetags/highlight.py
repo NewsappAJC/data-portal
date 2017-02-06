@@ -4,6 +4,7 @@ import re
 # Django imports
 from django import template
 from django.utils.html import format_html
+from django.utils.encoding import smart_unicode
 
 register = template.Library()
 
@@ -29,7 +30,7 @@ def highlight(value, arg):
     except (AttributeError, TypeError):
         pass
 
-    return value
+    return smart_unicode(value)
 
 register.filter('highlight', highlight)
 
