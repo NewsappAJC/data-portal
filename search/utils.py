@@ -1,5 +1,6 @@
 # Stdlib imports
 import os
+import re
 
 # Third-party imports
 from sqlalchemy import create_engine
@@ -10,6 +11,9 @@ DATA_WAREHOUSE_URL = os.environ.get('DATA_WAREHOUSE_URL')
 # Takes a name_query string and returns a list of dicts
 # containing database information, columns searched and a SQLalchemy query result
 def table_search(query, table, search_columns, preview):
+    query = re.sub(r'[^\w\s]', '', query) # Strip out all non-alphanumeric characters
+    query = re.sub(r'\s', ' +', query) # MySQL treats + as logical AND
+
     sql_query = '''
         SELECT * FROM imports.{table}
         where MATCH({search_columns})

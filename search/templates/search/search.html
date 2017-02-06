@@ -38,22 +38,27 @@
 
     <div class="col-xs-12">
       <h3>
-        <button class="btn btn-default url-btn" data-id="{{result.id}}">
-          Get S3 URL
-        </button>
         Found records in <span class="table-title"> {{ result.table }} </span>
       </h3>
 
-      {% if result.data|length > 6 %}
-          <form method="POST" class="form-horizontal" action="./show_full_dataset/">
+      <div class="row">
+        <div class="col-xs-2">
+          <form method="POST" action="./show_full_dataset/">
               {% csrf_token %}
-              <input type="hidden" name="query" value = {{ query }}>
-              <input type="hidden" name="database" value = {{ result.database }}>
-              <input type="hidden" name="table" value = {{ result.table }}>
-              <input type="hidden" name="search_columns" value = {{ result.search_columns }}>
-              <button class="btn btn-success" type="submit">See all records</button>
+              <input type="hidden" name="query" value={{ query }}>
+              <input type="hidden" name="table" value={{ result.table }}>
+              <input type="hidden" name="search_columns" value ={{ result.search_columns }}>
+              <button class="btn btn-default" type="submit">See all records</button>
           </form>
-      {% endif %}
+        </div>
+        <!--
+        <div class="col-xs-2">
+          <button class="btn btn-default url-btn" data-id="{{result.id}}">
+            Get S3 URL
+          </button>
+        </div>
+        -->
+      </div>
 
       <div class="results-holder">
         <table class="table table-striped">
