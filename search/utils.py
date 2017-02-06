@@ -39,7 +39,7 @@ def table_search(query, table, search_columns, preview):
 
         values = []
         for row in search_result:
-            values.append([unicode(x) for x in row.values()])
+            values.append(row.values())
         result['preview']['data'] = values
     
         return result
