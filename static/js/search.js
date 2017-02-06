@@ -21,7 +21,7 @@ window.onload = function() {
       var id = this.dataset.id;
       getURL(id);
     })
-    $('#search-submit').on('click', function() {
+    $('#search-submit, #detail-submit').on('click', function() {
       $(this).button('loading');
       $('#search-error').html('');
     })
