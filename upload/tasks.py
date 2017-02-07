@@ -20,7 +20,7 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
-TOTAL = 8 # Unfortunately we have to hardcode the total number of progress steps
+TOTAL = 10 # Unfortunately we have to hardcode the total number of progress steps
 
 class Index(object):
     """
@@ -34,7 +34,7 @@ class Index(object):
     def _get_columns(self, data_type):
         query = """
         SELECT CONCAT_WS('.','imports',t,'table') AS table,
-            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS index_fields
+            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS indexes
         FROM data_import_tool.`upload_table` t
         JOIN data_import_tool.`upload_column` c
         ON t.`id`=c.`table_id`
@@ -51,7 +51,7 @@ class Index(object):
         if indexer:
             args = {
                 'table': indexer[0]['table'],
-                'columns': indexer[0]['index_fields']
+                'columns': indexer[0]['indexes']
             }
             query = """
                 ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
@@ -172,25 +172,22 @@ class Loader(object):
             create_table_query = self._make_create_table_q(self.table, self.columns)
             load_data_query = self._make_load_table_q()
 
-            # If an SQL error is thrown, end the process and return a summary of the error
+            # If an SQL error is thrown, end the process and return a summary
+            # of the error
             try:
-                # Check if a database with the given name exists. If it doesn't, create one.
-                self.tracker.forward('Connecting to imports database')
-
-                # Create the table. This raises an error if a table with that name
-                self.tracker.forward('Creating table')
+                self.tracker.forward('Creating table in imports database')
                 self.connection.execute(create_table_query)
 
                 # Execute load data infile statement
                 self.tracker.forward('Executing load data infile')
                 self.connection.execute(load_data_query)
 
-            # General class that catches all sqlalchemy errors
+            # Use the general class that catches all sqlalchemy errors.
+            # Store only the relevant part of the warnings
             except exc.SQLAlchemyError as e:
-                r = re.compile(r'\(.+?\)') # Grab only the relevant part of the warning
+                r = re.compile(r'\(.+?\)')
                 return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
 
-            # Write warnings to a list for that will be returned to the user
             if len(w) > 0:
                 r = re.compile(r'\(.+?\)')
                 sql_warnings = [r.findall(str(warning))[0] for warning in w]
