@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import os
 import re
 import warnings
-from urlparse import urlparse
 
 # Third party imports
 import sqlalchemy
@@ -21,6 +20,7 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
+TOTAL = 8 # Unfortunately we have to hardcode the total number of progress steps
 
 class Index(object):
     """
@@ -58,50 +58,126 @@ class Index(object):
                 """.format(**args)
             return query
 
+
+class ProgressTracker(object):
+    def __init__(self, celery):
+        self.celery = celery
+        self.total = TOTAL
+        self.step = 0
+
+    def forward(self, message):
+        """
+        Send a message to the Redis server updating the state of the task so that
+        we can have an informative, pretty progress bar
+        """
+        self.step += 1
+        meta = {'message': message,
+                'error': False,
+                'current': self.step,
+                'total': self.total}
+        self.celery.update_state(state='PROGRESS', meta=meta)
+
 class Loader(object):
     """
-    This class handles creation of all the queries necessary to create a table,
-    load local data into it, and generate indices. 
+    This class handles creation of all the queries necessary to create a table
+    and load local data into it, all while sending progress updates to a celery
+    class instance
     """
-    def __init__(self, inst, step, connection, table, columns, path):
+    def __init__(self, tracker, connection, table, columns, path):
         self.connection = connection
-        self.inst = inst
-        self.warnings = []
+        self.tracker = tracker
+        self.path = path
+        self.table = table
+        self.columns = columns
 
-    def _make_table_q(self, table, cols):
-        query = 'CREATE TABLE {table} ({columns});'.format(table=table, columns=cols)
+    def _get_column_types(self, filepath, headers):
+        self._forward('Inferring datatype of columns')
+        # Load the csv and use csvkit's sql.make_table utility 
+        # to infer the datatypes of the columns.
+        f = open(filepath,'r')
+        csv_table = table.Table.from_csv(f, delimiter=',')
+        sql_table = sql.make_table(csv_table)
+
+        for i, column in enumerate(sql_table.columns):
+            # Clean the type and name values
+            raw_type = str(column.type)
+            clean_type = re.sub(re.compile(r'\(\w+\)'), '', raw_type)
+            
+            # Temporary fix for issue #19
+            if raw_type == 'BOOLEAN':
+                raw_type = 'VARCHAR(10)'
+
+            if raw_type == 'DATETIME':
+                # Dumb guess at the maximum length of a datetime field. Find a 
+                # better way!
+                raw_type = 'VARCHAR(100)'
+
+            parsed_length = re.search(re.compile(r'\((\w+)\)'), raw_type)
+            if parsed_length:
+                clean_length = int(parsed_length.group(1))
+            else:
+                clean_length = None
+
+            headers[i]['datatype'] = clean_type.lower()
+            headers[i]['raw_type'] = raw_type
+            headers[i]['length'] = clean_length
+
+        return headers
+
+    def _make_create_table_q(self):
+        """
+        Generate a CREATE TABLE query
+        """
+        columns = self._get_column_types()
+
+        # Convert column types back to strings for use in the create table
+        # statement
+        types= ['{name} {raw_type}'.format(**x) for x in columns]
+        args = {'table': self.table, 'columns': types}
+        query = 'CREATE TABLE {table} ({columns});'.format(**args)
+
         return query
 
-    def _make_indices(self, name):
-        index = Index(name)
+    def _make_load_table_q(self):
+        # We've sanitized inputs to avoid risk of SQL injection. To understand
+        # of why we're sanitizing manually instead of passing args to 
+        # sqlalchemy's execute method, see:
+        # http://stackoverflow.com/q/40249590/4599578
+        query = """
+            LOAD DATA LOCAL INFILE "{path}" INTO TABLE imports.{table}
+            FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
+            IGNORE 1 LINES;
+            """.format(path=self.path, table=self.table)
+
+        return query
 
     def load_infile(self):
         """
-        Upload a local CSV to the MySQL database
+        The only public method of this class
+
+        Creates a table in MySQL database and uploads a CSV to it
 
         Record all warnings raised by writing to the MySQL DB. MySQL doesn't
-        always raise exceptions for data truncation (?!), and we need to catch
-        that
+        always raise exceptions for data truncation (?!)
         """
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
 
             create_table_query = self._make_table_q(self.table, self.columns)
+            load_data_query = self._make_load_q()
 
             # If an SQL error is thrown, end the process and return a summary of the error
             try:
                 # Check if a database with the given name exists. If it doesn't, create one.
-                forward(self.inst, self.step, 'Connecting to database {}'.format(db_name), total)
-                self.step += 1
+                self.tracker.forward('Connecting to imports database')
 
                 # Create the table. This raises an error if a table with that name
-                forward(self.inst, step, 'Creating table', total)
-                self.step += 1
+                self.tracker.forward('Creating table')
                 self.connection.execute(create_table_query)
 
                 # Execute load data infile statement
-                step = forward(self.inst, step, 'Executing load data infile', total)
-                connection.execute(load_data_query)
+                self.tracker.forward('Executing load data infile')
+                self.connection.execute(load_data_query)
 
             # General class that catches all sqlalchemy errors
             except exc.SQLAlchemyError as e:
@@ -113,51 +189,10 @@ class Loader(object):
                 r = re.compile(r'\(.+?\)')
                 sql_warnings = [r.findall(str(warning))[0] for warning in w]
 
+        return (create_table_query, sql_warnings)
 
-def get_column_types(filepath, headers):
-    # Load the csv and use csvkit's sql.make_table utility 
-    # to infer the datatypes of the columns.
-    f = open(filepath,'r')
-    csv_table = table.Table.from_csv(f, delimiter=',')
-    sql_table = sql.make_table(csv_table)
-
-    for i, column in enumerate(sql_table.columns):
-        # Clean the type and name values
-        raw_type = str(column.type)
-        clean_type = re.sub(re.compile(r'\(\w+\)'), '', raw_type)
-        
-        # Temporary fix for issue #19
-        if raw_type == 'BOOLEAN':
-            raw_type = 'VARCHAR(10)'
-
-        if raw_type == 'DATETIME':
-            # Dumb guess at the maximum length of a datetime field. Find a 
-            # better way!
-            raw_type = 'VARCHAR(100)'
-
-        parsed_length = re.search(re.compile(r'\((\w+)\)'), raw_type)
-        if parsed_length:
-            clean_length = int(parsed_length.group(1))
-        else:
-            clean_length = None
-
-        headers[i]['datatype'] = clean_type.lower()
-        headers[i]['raw_type'] = raw_type
-        headers[i]['length'] = clean_length
-
-    return headers
-
-def forward(instance, step, message, total):
-    """
-    Send a message to the Redis server updating the state of the task so that
-    we can have an informative, pretty progress bar
-    """
-    step += 1
-    instance.update_state(state='PROGRESS', meta={'message': message,
-                                                  'error': False,
-                                                  'current': step,
-                                                  'total': total})
-    return step
+    def get_preview(self):
+        return self.connection.execute('SELECT * FROM imports.{} LIMIT 5'.format(self.table))
 
 
 def sanitize(string):
@@ -174,9 +209,8 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     A celery task that accesses a database and executes a LOAD DATA INFILE 
     query to load a CSV into it.
     """
-    # The total number of steps. Used to send progress reports back to the app
-    total = 8
-    step = forward(self, 0, 'Downloading data from Amazon S3', total)
+    tracker = ProgressTracker(self)
+    tracker.forward('Downloading data from Amazon S3')
 
     session = boto3.Session(aws_access_key_id=ACCESS_KEY, 
                             aws_secret_access_key=SECRET_KEY)
@@ -192,45 +226,15 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
         raise ValueError(error_message)
 
     # Keep track of progress
-    step = forward(self, step, 'Connecting to MySQL server', total)
+    tracker.forward('Connecting to MySQL server')
 
     # Create a connection to the data warehouse. Pass local_infile as a
     # parameter so that the connection will accept LOAD INFILE statements
     engine = sqlalchemy.create_engine(URL + '?local_infile=1')
     connection = engine.connect()
 
-    # Get the DB name from the DATA_WAREHOUSE_URL env var. Baffled as to why
-    # SQLAlchemy doesn't provide a way to do this from the connection
-    db_name = urlparse(str(engine.url)).path.strip('/')
-
-    step = forward(self, step, 'Inferring datatype of columns', total)
-    columnsf = get_column_types(local_path, columns)
-
-    # Convert column types back to strings for use in the create table statement
-    stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
-    sql_args = {
-        'connection': connection,
-        'table': table_name,
-        'columns': (', ').join(stypes),
-        'path': local_path,
-        'db_name': db_name
-    }
-
-    table = Table(**sql_args)
-    table.load_infile()
-
-    # TODO change line endings to accept \r\n as well, if necessary
-    # We've sanitized inputs to avoid risk of SQL injection. For explanation
-    # of why we're sanitizing manually instead of passing args to sqlalchemy's execute method, see
-    # http://stackoverflow.com/questions/40249590/sqlalchemy-error-when-adding-parameter-to-string-sql-query
-    create_table_query = 'CREATE TABLE {table} ({columns});'.format(**sql_args)
-    load_data_query = """
-        LOAD DATA LOCAL INFILE "{path}" INTO TABLE {db_name}.{table}
-        FIELDS TERMINATED BY "," LINES TERMINATED BY "\n"
-        IGNORE 1 LINES;
-        """.format(**sql_args)
-
-
+    loader = Loader(self, tracker, connection, table_name, columns, local_path)
+    create_table_query, sql_warnings = loader.load_infile()
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
@@ -238,12 +242,11 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
 
     # Return a preview of the top few rows in the table
     # to check that the casting was correct
-    step = forward(self, step, 'Querying the table for preview data', total)
-    data = connection.execute('SELECT * FROM {db_name}.{table}'.format(**sql_args))
+    tracker.forward('Querying the table for preview data')
+    preview = loader.get_preview()
 
     dataf = []
-    dataf.append([x for x in data.keys()])
-    dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
+    dataf.append([x for x in preview.keys()])
 
     connection.close()
 
@@ -251,7 +254,6 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
         'table': table_name,
         'final_s3_path': final_s3_path,
         'data': dataf,
-        'db': db_name,
         'headers': columns,
         'warnings': sql_warnings,
         'query': create_table_query
