@@ -56,7 +56,7 @@ def get_presigned_url(request, id):
 
     return JsonResponse(url)
 
-def show_full_dataset(request):
+def search_detail(request):
     results = []
 
     if request.method == 'POST':
@@ -66,10 +66,10 @@ def show_full_dataset(request):
         preview = False
 
         results.append(table_search(query, table, search_columns, preview))
-        context = {'query': query, 'results': results, 'detail': True}
+        context = {'query': query, 'result': results[0], 'detail': True}
 
     else:
         context = {'results': []}
 
-    return render(request,'search/search.html', context)
+    return render(request,'search/detail.html', context)
 

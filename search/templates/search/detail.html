@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+{% load highlight %}
+
+<div class="col-xs-12">
+  <h3>
+    Found <span class="count">{{ result.count }}</span> 
+    matches for {{ query }} in 
+    <span class="table-title"> {{ result.table }} </span>
+  </h3>
+
+  <div class="results-holder">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          {% for header in result.preview.headers %}
+            <th class="preview-header">{{ header }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in result.preview.data %}
+        <tr>
+          {% for el in row %}
+            <td>{{ el|highlight:query }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

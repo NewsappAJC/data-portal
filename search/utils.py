@@ -41,14 +41,17 @@ def table_search(query, table, search_columns, preview):
         for row in search_result:
             values.append(row.values())
         result['preview']['data'] = values
-    
+
+        if not preview:
+            result['count'] = len(values)
+
         return result
 
     else:
         return None
 
 
-def warehouse_search(query):
+def warehouse_search(query, data_type='name'):
     if len(query)>0:
         connection = connect_to_db()
 
@@ -60,8 +63,8 @@ def warehouse_search(query):
             FROM data_import_tool.upload_table t
             JOIN data_import_tool.upload_column c
             ON t.id=c.table_id
-            WHERE RIGHT(c.information_type,4) = 'name'
-            GROUP BY 1''').fetchall()
+            WHERE RIGHT(c.information_type,4) = '{}'
+            GROUP BY 1'''.format(data_type)).fetchall()
 
         connection.close()
 

@@ -164,9 +164,15 @@ def write_to_db(request):
 @login_required
 def check_task_status(request):
     """
-    Poll to check the completion status of celery task. If task has succeeded,
-    return a sample of the data, and write metadata about upload to Django DB.
-    If failed, return error message.
+    Polls the server to check the completion status of celery task. Performs
+    one of the following:
+    
+    * Update task progress
+
+    * If the task succeeded, return a sample of the data, and write metadata
+    about the table and columns to Django DB.
+
+    * If the task failed, return error message.
     """
     # Use the ID of the async task saved in session storage to check the task
     # status
@@ -181,11 +187,10 @@ def check_task_status(request):
     # If the task is successful, write information about the upload to the
     # Django DB.
     if data['status'] == 'SUCCESS' and not data['result']['error']:
-        # Create a table object in the Django DB
+        # Create a new table record in the Django DB
         params = request.session['table_params']
         t = Table(
             table=data['result']['table'],
-            #url=data['result']['url'],
             topic=params['topic'],
             user=request.user,
             source=params['source'],
@@ -195,6 +200,8 @@ def check_task_status(request):
         )
         t.save()
 
+        # Create a new column record in the Django DB for each column in
+        # the table
         c = Contact(
             table=t,
             name=params['press_contact'],

@@ -119,3 +119,12 @@ label {
 .highlight {
   background-color: yellow;
 }
+
+.count {
+  color: #337ab7;
+}
+
+.site-title {
+  color: black;
+  cursor: pointer;
+}
