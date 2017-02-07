@@ -22,6 +22,98 @@ URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 
+class Index(object):
+    """
+    This class handles creation of a query to generate an index for a given
+    column in a MySQL table
+    """
+    def __init__(self, table_id, connection):
+        self.table_id = table_id
+        self.connection = connection
+
+    def _get_columns(self, data_type):
+        query = """
+        SELECT CONCAT_WS('.','imports',t,'table') AS table,
+            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS index_fields
+        FROM data_import_tool.`upload_table` t
+        JOIN data_import_tool.`upload_column` c
+        ON t.`id`=c.`table_id`
+        WHERE RIGHT(c.`information_type`,5) = '{type}'
+        AND t.`id`={id}
+        GROUP BY 1;
+        """.format(id=self.table_id, type=data_type)
+
+        columns = self.connection.execute(query).fetchall()
+        return columns
+
+    def get_query(self, data_type):
+        indexer = self._get_columns(data_type)
+        if indexer:
+            args = {
+                'table': indexer[0]['table'],
+                'columns': indexer[0]['index_fields']
+            }
+            query = """
+                ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
+                """.format(**args)
+            return query
+
+class Loader(object):
+    """
+    This class handles creation of all the queries necessary to create a table,
+    load local data into it, and generate indices. 
+    """
+    def __init__(self, inst, step, connection, table, columns, path):
+        self.connection = connection
+        self.inst = inst
+        self.warnings = []
+
+    def _make_table_q(self, table, cols):
+        query = 'CREATE TABLE {table} ({columns});'.format(table=table, columns=cols)
+        return query
+
+    def _make_indices(self, name):
+        index = Index(name)
+
+    def load_infile(self):
+        """
+        Upload a local CSV to the MySQL database
+
+        Record all warnings raised by writing to the MySQL DB. MySQL doesn't
+        always raise exceptions for data truncation (?!), and we need to catch
+        that
+        """
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+
+            create_table_query = self._make_table_q(self.table, self.columns)
+
+            # If an SQL error is thrown, end the process and return a summary of the error
+            try:
+                # Check if a database with the given name exists. If it doesn't, create one.
+                forward(self.inst, self.step, 'Connecting to database {}'.format(db_name), total)
+                self.step += 1
+
+                # Create the table. This raises an error if a table with that name
+                forward(self.inst, step, 'Creating table', total)
+                self.step += 1
+                self.connection.execute(create_table_query)
+
+                # Execute load data infile statement
+                step = forward(self.inst, step, 'Executing load data infile', total)
+                connection.execute(load_data_query)
+
+            # General class that catches all sqlalchemy errors
+            except exc.SQLAlchemyError as e:
+                r = re.compile(r'\(.+?\)') # Grab only the relevant part of the warning
+                return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
+
+            # Write warnings to a list for that will be returned to the user
+            if len(w) > 0:
+                r = re.compile(r'\(.+?\)')
+                sql_warnings = [r.findall(str(warning))[0] for warning in w]
+
+
 def get_column_types(filepath, headers):
     # Load the csv and use csvkit's sql.make_table utility 
     # to infer the datatypes of the columns.
@@ -117,11 +209,15 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     # Convert column types back to strings for use in the create table statement
     stypes = ['{name} {raw_type}'.format(**x) for x in columnsf]
     sql_args = {
+        'connection': connection,
         'table': table_name,
         'columns': (', ').join(stypes),
         'path': local_path,
         'db_name': db_name
     }
+
+    table = Table(**sql_args)
+    table.load_infile()
 
     # TODO change line endings to accept \r\n as well, if necessary
     # We've sanitized inputs to avoid risk of SQL injection. For explanation
@@ -135,34 +231,6 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
         """.format(**sql_args)
 
 
-    # Record all warnings raised by writing to the MySQL DB. MySQL doesn't
-    # always raise exceptions for data truncation (?!)
-    sql_warnings = []
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter('always')
-
-        # If an SQL error is thrown, end the process and return a summary of the error
-        try:
-            # Check if a database with the given name exists. If it doesn't, create one.
-            step = forward(self, step, 'Connecting to database {}'.format(db_name), total)
-
-            # Create the table. This raises an error if a table with that name
-            step = forward(self, step, 'Creating table', total)
-            connection.execute(create_table_query)
-
-            # Execute load data infile statement
-            step = forward(self, step, 'Executing load data infile', total)
-            connection.execute(load_data_query)
-
-        # General class that catches all sqlalchemy errors
-        except exc.SQLAlchemyError as e:
-            r = re.compile(r'\(.+?\)') # Grab only the relevant part of the warning
-            return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
-
-        # Write warnings to a list for that will be returned to the user
-        if len(w) > 0:
-            r = re.compile(r'\(.+?\)')
-            sql_warnings = [r.findall(str(warning))[0] for warning in w]
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
