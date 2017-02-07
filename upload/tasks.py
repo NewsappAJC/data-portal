@@ -60,16 +60,16 @@ class Index(object):
 
 
 class ProgressTracker(object):
+    """
+    This class sends messages to the Redis server to update the state of the
+    task so that we can have an informative, pretty progress bar
+    """
     def __init__(self, celery):
         self.celery = celery
         self.total = TOTAL
         self.step = 0
 
     def forward(self, message):
-        """
-        Send a message to the Redis server updating the state of the task so that
-        we can have an informative, pretty progress bar
-        """
         self.step += 1
         meta = {'message': message,
                 'error': False,
@@ -77,25 +77,31 @@ class ProgressTracker(object):
                 'total': self.total}
         self.celery.update_state(state='PROGRESS', meta=meta)
 
+
 class Loader(object):
     """
     This class handles creation of all the queries necessary to create a table
     and load local data into it, all while sending progress updates to a celery
     class instance
     """
-    def __init__(self, tracker, connection, table, columns, path):
-        self.connection = connection
+    def __init__(self, tracker, table, columns, path):
         self.tracker = tracker
         self.path = path
         self.table = table
         self.columns = columns
 
+        # Create a connection to the data warehouse. Pass local_infile as a
+        # parameter so that the connection will accept LOAD INFILE statements
+        engine = sqlalchemy.create_engine(URL + '?local_infile=1')
+        self.connection = engine.connect()
+
     def _get_column_types(self, filepath, headers):
         self._forward('Inferring datatype of columns')
         # Load the csv and use csvkit's sql.make_table utility 
         # to infer the datatypes of the columns.
-        f = open(filepath,'r')
-        csv_table = table.Table.from_csv(f, delimiter=',')
+        with open(filepath,'r') as f:
+            csv_table = table.Table.from_csv(f, delimiter=',')
+
         sql_table = sql.make_table(csv_table)
 
         for i, column in enumerate(sql_table.columns):
@@ -126,7 +132,7 @@ class Loader(object):
 
     def _make_create_table_q(self):
         """
-        Generate a CREATE TABLE query
+        Generate a CREATE TABLE query that casts each column as the right type
         """
         columns = self._get_column_types()
 
@@ -163,8 +169,8 @@ class Loader(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
 
-            create_table_query = self._make_table_q(self.table, self.columns)
-            load_data_query = self._make_load_q()
+            create_table_query = self._make_create_table_q(self.table, self.columns)
+            load_data_query = self._make_load_table_q()
 
             # If an SQL error is thrown, end the process and return a summary of the error
             try:
@@ -193,6 +199,9 @@ class Loader(object):
 
     def get_preview(self):
         return self.connection.execute('SELECT * FROM imports.{} LIMIT 5'.format(self.table))
+
+    def end_connection(self):
+        self.connection.end()
 
 
 def sanitize(string):
@@ -228,16 +237,12 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     # Keep track of progress
     tracker.forward('Connecting to MySQL server')
 
-    # Create a connection to the data warehouse. Pass local_infile as a
-    # parameter so that the connection will accept LOAD INFILE statements
-    engine = sqlalchemy.create_engine(URL + '?local_infile=1')
-    connection = engine.connect()
-
-    loader = Loader(self, tracker, connection, table_name, columns, local_path)
+    loader = Loader(self, tracker, table_name, columns, local_path)
     create_table_query, sql_warnings = loader.load_infile()
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
+    tracker.forward('Loading the file into S3')
     final_s3_path = copy_final_s3(s3_path, table_name)
 
     # Return a preview of the top few rows in the table
@@ -245,10 +250,12 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     tracker.forward('Querying the table for preview data')
     preview = loader.get_preview()
 
+    # End the MySQL connection
+    tracker.forward('Closing the connection to the database')
+    loader.end_connection()
+
     dataf = []
     dataf.append([x for x in preview.keys()])
-
-    connection.close()
 
     return {'error': False,
         'table': table_name,
