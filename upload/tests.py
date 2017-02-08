@@ -14,7 +14,7 @@ import botocore
 
 # Local module imports
 from .views import write_to_db, categorize, check_task_status
-from .utils import (check_duplicates, clean)
+# from .utils import TableFormatter
 # from .tasks import load_infile
 from .models import Table
 
@@ -123,30 +123,30 @@ class MockSQLAlchemy(object):
 # BEGIN TEST CLASSES
 # -----------------------------------------------------------------------------
 
-class UtilsTestCase(TestCase):
-    """
-    Test helper functions that are each too small to justify creating their
-    own TestCase instance
-    """
-    @patch('upload.utils.boto3.client', MockBoto)
-    def test_check_duplicates(self):
-        """
-        Ensure that check_duplicates changes the name of the file to avoid name
-        collisions
-        """
-        duplicate_path = check_duplicates('tmp/test')
-        self.assertEqual(duplicate_path, 'tmp/test(3)')
-
-    def test_clean(self):
-        """
-        Check handling of duplicate column names, names with illegal
-        characters, and names that exceed the length limit
-        """
-        test_names = ['duplicate', 'duplicate', 'test;column', 'a'*100]
-        clean_names = clean(test_names)
-
-        for c in ['duplicate', 'duplicate1', 'testcolumn', 'a'*60]:
-            self.assertTrue(c in clean_names)
+# class UtilsTestCase(TestCase):
+#     """
+#     Test helper functions that are each too small to justify creating their
+#     own TestCase instance
+#     """
+#     @patch('upload.utils.boto3.client', MockBoto)
+#     def test_check_duplicates(self):
+#         """
+#         Ensure that check_duplicates changes the name of the file to avoid name
+#         collisions
+#         """
+#         duplicate_path = check_duplicates('tmp/test')
+#         self.assertEqual(duplicate_path, 'tmp/test(3)')
+# 
+#     def test_clean(self):
+#         """
+#         Check handling of duplicate column names, names with illegal
+#         characters, and names that exceed the length limit
+#         """
+#         test_names = ['duplicate', 'duplicate', 'test;column', 'a'*100]
+#         clean_names = clean(test_names)
+# 
+#         for c in ['duplicate', 'duplicate1', 'testcolumn', 'a'*60]:
+#             self.assertTrue(c in clean_names)
 
 
 class UploadFileViewTestCase(TestCase):

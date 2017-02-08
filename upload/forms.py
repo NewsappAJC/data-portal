@@ -63,7 +63,7 @@ class DataForm(forms.Form):
 
         engine = sqlalchemy.create_engine(os.environ.get('DATA_WAREHOUSE_URL'))
         connection = engine.connect()
-        names = [n[0] for n in connection.execute('SHOW TABLES;')]
+        names = [n[0] for n in connection.execute('SHOW TABLES IN imports;')]
         if input_name in names:
             raise forms.ValidationError(
                 'A table with that name already exists in the database.'

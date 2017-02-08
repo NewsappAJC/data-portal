@@ -22,8 +22,9 @@ class S3Manager(object):
     provides cool stuff like checking for duplicate filenames and renaming
     files as needed.
 
-    Attributes:
-        client (boto3.client): The client object that handles S3 transactions
+    Args:
+        local_path (string): The path to the CSV on the user's computer
+        table_name (string): The name of the table
     """
     def __init__(self, local_path, table_name):
         key = settings.AWS_ACCESS_KEY
@@ -58,9 +59,9 @@ class S3Manager(object):
 
             # If there's already a number appended to the end of the key, strip it
             # out so we can append the new number
-            rx = re.compile(r'\(\d+\)$')
-            if rx.search(key):
-                key = re.sub(rx, '', key)
+            r = re.compile(r'\(\d+\)$')
+            if r.search(key):
+                key = re.sub(r, '', key)
 
             # Recursive call to check with updated filename suffix
             return self._check_duplicates('{}({})'.format(key, str(i)), i)
@@ -172,7 +173,7 @@ class TableFormatter(object):
             a nested list of sample data
         """
         columns = []
-        sample_rows = []
+        rows = []
         with open(self.filepath, 'r') as f:
             # Loop through lines to avoid reading the entire file into memory
             for i, line in enumerate(f):
@@ -183,7 +184,7 @@ class TableFormatter(object):
                     columns = linef
                 # Only get sample data from the first 3 rows
                 elif i < 4:
-                    sample_rows.append(linef)
+                    rows.append(linef)
                 # After 4 lines, stop reading the CSV
                 else:
                     break
@@ -193,9 +194,8 @@ class TableFormatter(object):
         headers = [{'name': column, 'sample_data': []} for column in ccolumns]
 
         # Append the sample data to the header objects
-        for sample_row in sample_rows:
-            for i in range(len(sample_row)):
-                headers[i]['sample_data'].append(str(sample_row[i]))
+        for i in range(len(headers)):
+            headers[i]['sample_data'] = [str(x[i]) for x in rows]
 
         return headers
 
@@ -204,7 +204,13 @@ class Index(object):
     """
     This module handles creation of a query to generate an index for a given
     column in a MySQL table
+
+    Args:
+        table_id (string): The UniqueID of a table in the Django DB
+        connection (sqlalchemy.engine.connection): A sqlalchemy connection
+                                                   object
     """
+
     def __init__(self, table_id, connection):
         self.table_id = table_id
         self.connection = connection
@@ -224,7 +230,15 @@ class Index(object):
         columns = self.connection.execute(query).fetchall()
         return columns
 
-    def get_query(self, data_type):
+    def create_index(self, data_type):
+        """
+        Generate the SQL query to create an index, connect to the MySQL,
+        database, and create the index
+
+        Args:
+            data_type(string): The AJC datatype (eg "name", "address") used
+                               to categorize columns
+        """
         indexer = self._get_columns(data_type)
         if indexer:
             args = {
@@ -234,5 +248,9 @@ class Index(object):
             query = """
                 ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
                 """.format(**args)
-            return query
+
+            self.connection.execute(query)
+            return True
+        else:
+            return False
 

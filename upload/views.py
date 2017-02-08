@@ -1,6 +1,5 @@
 # Standard library imports
 import os
-from urlparse import urlparse
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -18,7 +17,7 @@ from redis.exceptions import ConnectionError
 # Local imports
 from .forms import DataForm
 from .models import Column, Table, Contact
-from .utils import S3Manager, TableFormatter
+from .utils import S3Manager, TableFormatter, Index
 # Have to do an absolute import below because of how celery resolves paths :(
 from upload.tasks import load_infile
 
@@ -213,10 +212,12 @@ def check_task_status(request):
         )
         c.save()
 
-        # Create column objects for each column in the table
-        # Some of the data about each column is held in session storage,
-        # some is returned by the task. Both store the columns in the same
-        # order.
+        engine = sqlalchemy.create_engine(URL)
+        connection = engine.connect()
+        index = Index(table_id=t.id, connection=connection)
+
+        # Create column objects for each column in the table, and create an
+        # index for the ones we're interested in
         for i, session_header in enumerate(request.session['headers']):
             task_header = data['result']['headers'][i]
             c = Column(table=t,
@@ -225,9 +226,8 @@ def check_task_status(request):
                        information_type=session_header['category'],
                        column_size=task_header['length'])
             c.save()
-
-        # Once the data is written to the Django database we can create the
-        # indexes for the fields we're interested in.
+            if c.information_type != None:
+                index.create_index(c.information_type)
 
 
     # If response isn't JSON serializable then it's an error message.
@@ -248,11 +248,8 @@ def get_detail(request, id):
     engine = sqlalchemy.create_engine(URL)
     connection = engine.connect()
 
-    db_name = urlparse(str(engine.url)).path.strip('/')
-    select_query = 'SELECT * FROM {db_name}.{table}'
-
-    data = connection.execute(select_query.format(db_name=db_name,
-                                                  table=table.table))
+    select_query = 'SELECT * FROM imports.{table}'.format(table)
+    data = connection.execute(select_query)
 
     # TODO break this out into a separate function so the code isn't duplicated
     dataf = []

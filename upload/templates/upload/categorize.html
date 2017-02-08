@@ -20,33 +20,35 @@
   <form action="/upload/" method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          {% for header in headers %}
-          <th>
-            {{header.name}}
-            <select name="{{ header.name }}">
-              <option disabled selected value> -- Select a category -- </option>
-              {% for cat in ajc_categories %}
-                <option value="{{ cat.0 }}">{{ cat.1 }}</option>
-              {% endfor %}
-            </select>
-          </th>
-          {% endfor %}
-        </tr>
-      </thead>
-
-      <tbody>
-        {% for i in range %}
+    <div class="results-holder">
+      <table class="table table-striped">
+        <thead>
           <tr>
             {% for header in headers %}
-              <td>{{ header.sample_data|get_item:i }}</td>
+            <th>
+              {{header.name}}
+              <select name="{{ header.name }}">
+                <option disabled selected value> -- Select a category -- </option>
+                {% for cat in ajc_categories %}
+                  <option value="{{ cat.0 }}">{{ cat.1 }}</option>
+                {% endfor %}
+              </select>
+            </th>
             {% endfor %}
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+
+        <tbody>
+          {% for i in range %}
+            <tr>
+              {% for header in headers %}
+                <td>{{ header.sample_data|get_item:i }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     <button 
       type="submit"
