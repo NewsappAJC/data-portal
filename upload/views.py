@@ -18,8 +18,8 @@ from redis.exceptions import ConnectionError
 # Local imports
 from .forms import DataForm
 from .models import Column, Table, Contact
-from .utils import get_column_names, write_tempfile_to_s3
-# Have to do an absolute import below because of how celery resolves paths.
+from .utils import S3Manager, TableFormatter
+# Have to do an absolute import below because of how celery resolves paths :(
 from upload.tasks import load_infile
 
 # Constants
@@ -62,14 +62,16 @@ def upload_file(request):
 
             # Write the CSV to a temporary file in the Amazon S3 bucket that
             # we will retrieve later
-            request.session['s3_path'] = write_tempfile_to_s3(path, table_name)
+            s3 = S3Manager(path, table_name)
+            request.session['s3_path'] = s3.write_tempfile_to_s3()
 
-            headers = get_column_names(path)
-            request.session['headers'] = headers
+            # Sanitize the column headers
+            formatter = TableFormatter(path)
+            request.session['headers'] = formatter.get_column_names()
 
             # Return an empty HTTP Response to the AJAX request to let it know
             # the request was successful. When the page receives a success
-            # header it will automatically redirect to the categorize view
+            # header it will automatically redirect to the next page
             return HttpResponse(status=200)
 
         else:
@@ -167,12 +169,12 @@ def check_task_status(request):
     Polls the server to check the completion status of celery task. Performs
     one of the following:
     
-    * Update task progress
+    Update task progress
 
-    * If the task succeeded, return a sample of the data, and write metadata
+    If the task succeeded, return a sample of the data, and write metadata
     about the table and columns to Django DB.
 
-    * If the task failed, return error message.
+    If the task failed, return error message.
     """
     # Use the ID of the async task saved in session storage to check the task
     # status
@@ -223,6 +225,10 @@ def check_task_status(request):
                        information_type=session_header['category'],
                        column_size=task_header['length'])
             c.save()
+
+        # Once the data is written to the Django database we can create the
+        # indexes for the fields we're interested in.
+
 
     # If response isn't JSON serializable then it's an error message.
     # Convert it to a string and return it

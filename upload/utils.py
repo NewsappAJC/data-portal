@@ -1,6 +1,5 @@
 """
-A collection of utility functions and classes that are used in other sections
-of the app
+A collection of utility classes for use elsewhere in the app
 """
 # Python standard lib imports
 import os
@@ -17,41 +16,44 @@ import botocore
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 
-
 class S3Manager(object):
-    def __init__(self):
-        pass
+    """
+    This module handles creating a connection to S3 and uploading files. It
+    provides cool stuff like checking for duplicate filenames and renaming
+    files as needed.
 
-    def _start_s3_session(self):
-        """
-        Use boto3 to start an s3 session
-        """
-        session = boto3.Session(
-            aws_access_key_id=settings.AWS_ACCESS_KEY,
-            aws_secret_access_key=settings.AWS_SECRET_KEY
-        )
+    Attributes:
+        client (boto3.client): The client object that handles S3 transactions
+    """
+    def __init__(self, local_path, table_name):
+        key = settings.AWS_ACCESS_KEY
+        secret = settings.AWS_SECRET_KEY
 
-        s3 = session.resource('s3')
-
-        return s3
+        self.client = boto3.client('s3', aws_access_key_id=key,
+                                   aws_secret_access_key=secret)
+        self.bucket = BUCKET_NAME
+        self.local_path = local_path
+        self.table_name = table_name
 
     def _check_duplicates(self, key, i=0):
         """
-        Check if a key already exists in S3. If it does, generate a new key and
-        return it
+        Check if a key already exists in S3. If it does, recursively call this
+        function. Generate a new key and return it.
+
+        Args:
+            key (string): A filename (possibly duplicate of existing filename)
+            i (int): A counter that is appended to the end of the filename if
+                     a file with that name already exists
+
+        Returns:
+            key (string): A non-duplicate filename
         """
         try:
             # Boto3 doesn't have a method to check if a given key already exists.
             # Trying to get metadata and catching the resulting ClientError
             # is the least expensive way to do it
-            client = boto3.client('s3',
-                                  aws_access_key_id=settings.AWS_ACCESS_KEY,
-                                  aws_secret_access_key=settings.AWS_SECRET_KEY)
+            self.client.head_object(Bucket=self.bucket, Key=key)
 
-            client.head_object(Bucket=BUCKET_NAME, Key=key)
-
-            # If the key already exists, call the function again with a different
-            # suffix
             i += 1
 
             # If there's already a number appended to the end of the key, strip it
@@ -60,15 +62,81 @@ class S3Manager(object):
             if rx.search(key):
                 key = re.sub(rx, '', key)
 
-            return check_duplicates('{}({})'.format(key, str(i)), i)
+            # Recursive call to check with updated filename suffix
+            return self._check_duplicates('{}({})'.format(key, str(i)), i)
+
         except botocore.exceptions.ClientError:
             return key
 
 
-    def _clean(names):
+    def copy_final_s3(self, tmp_path):
         """
-        Parse non-alphanumeric symbols out of headers, and append a number
+        Copy the original CSV file from the tmp bucket to its permanent home on s3
+
+        Args:
+            tmp_path (str): The path to a CSV stored in the temp directory on S3
+            table_name (str): The name of the final table
+        """
+        # Compose a key name
+        today = date.today().isoformat()
+        stem = '{today}_{table}'.format(table=self.table_name, today=today)
+
+        path = '{stem}/original/{table}.csv'.format(stem=stem,
+                                                         table=self.table_name)
+
+        # Check if a directory with the same name already exists in the
+        # S3 bucket, and if so change the key.
+        unique_path = self._check_duplicates(path)
+
+        # Copy the file to the permanent directory on S3 and delete the
+        # temporary file
+        self.client.copy(Bucket=self.bucket, CopySource=tmp_path, Key=unique_path)
+        self.client.delete_object(Bucket=self.bucket, Key=tmp_path)
+
+        return unique_path
+
+    def write_tempfile_to_s3(self):
+        """
+        Write a temporary file to the S3 server.
+
+        Args:
+            local_path (string): Path to local CSV file
+            table_name (string): The name of the table
+
+        Returns:
+            s3_path (string): The path to the temporary file on S3
+        """
+        s3_path = self._check_duplicates('tmp/{}.csv'.format(self.table_name))
+        with open(self.local_path, 'r') as f:
+            self.client.put_object(Bucket=self.bucket, Key=s3_path, Body=f)
+
+        return s3_path
+
+
+class TableFormatter(object):
+    """
+    This module handles formatting column names in a CSV. Initialize it with
+    the path to a local .csv file and it will sanitize each of the column
+    headers.
+
+
+    Example usage:
+        formatter = TableFormatter('my_local_file.csv')
+        column_names = formatter.get_column_names()
+    """
+    def __init__(self, path):
+        self.filepath = path
+
+    def _clean(self, names):
+        """
+        Parse non-alphanumeric symbols out of table headers, and append a number
         to the end of the column name in the case of duplicates
+
+        Args:
+            names (string[]): A list of column names that you want sanitized
+
+        Returns:
+            clean_names (string[]): A list of sanitized column names
         """
         preexisting = []  # Will keep track of duplicate column names
         clean_names = []  # Will hold sanitized column names
@@ -94,13 +162,18 @@ class S3Manager(object):
 
         return clean_names
 
-    def get_column_names(self, filepath):
+    def get_column_names(self):
         """
-        Get column names and sample data from a CSV without loading the whole csv
-        into memory
+        Get column names and sample data from a CSV without loading the whole
+        file into memory
+
+        Returns:
+            headers (string[string[]]): A list of sanitized column headers with
+            a nested list of sample data
         """
+        columns = []
         sample_rows = []
-        with open(filepath, 'r') as f:
+        with open(self.filepath, 'r') as f:
             # Loop through lines to avoid reading the entire file into memory
             for i, line in enumerate(f):
                 # Split lines on commas. TODO handle other delimiters
@@ -115,56 +188,51 @@ class S3Manager(object):
                 else:
                     break
 
-    # Clean the column names to prevent SQL injection
-    ccolumns = clean(columns)
-    headers = [{'name': column, 'sample_data': []} for column in ccolumns]
+        # Clean the column names to prevent SQL injection
+        ccolumns = self._clean(columns)
+        headers = [{'name': column, 'sample_data': []} for column in ccolumns]
 
-    # Append the sample data to the header objects
-    for sample_row in sample_rows:
-        for i in range(len(sample_row)):
-            headers[i]['sample_data'].append(str(sample_row[i]))
+        # Append the sample data to the header objects
+        for sample_row in sample_rows:
+            for i in range(len(sample_row)):
+                headers[i]['sample_data'].append(str(sample_row[i]))
 
-    return headers
-
-    def copy_final_s3(tmp_path, table_name):
-        """
-        Copy the original CSV file from the tmp bucket to its permanent home on s3
-        """
-        s3 = start_s3_session()
-
-        # Compose a key name
-        today = date.today().isoformat()
-        stem = '{today}_{table}'.format(table=table_name, today=today)
-
-        path = '{stem}/original/{table}.csv'.format(stem=stem,
-                                                         table=table_name)
-
-        # Check if a directory with the same name already exists in the
-        # S3 bucket, and if so change the key.
-        unique_path = check_duplicates(path)
-
-        # Write the file to Amazon S3 and delete the temporary file
-        copy_source = BUCKET_NAME + '/' + tmp_path
-        s3.Object(BUCKET_NAME, unique_path).copy_from(CopySource=copy_source)
-        s3.Object(BUCKET_NAME, tmp_path).delete()
-
-        return unique_path
+        return headers
 
 
-    def write_tempfile_to_s3(local_path, table_name):
-        """
-        Write a temporary file to the S3 server. Use it later to execute LOAD DATA
-        INFILE
-        """
-        s3 = start_s3_session()
-        bucket = s3.Bucket(BUCKET_NAME)
+class Index(object):
+    """
+    This module handles creation of a query to generate an index for a given
+    column in a MySQL table
+    """
+    def __init__(self, table_id, connection):
+        self.table_id = table_id
+        self.connection = connection
 
-        s3_path = check_duplicates('tmp/{}.csv'.format(table_name))
+    def _get_columns(self, data_type):
+        query = """
+        SELECT CONCAT_WS('.','imports',t,'table') AS table,
+            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS indexes
+        FROM data_import_tool.`upload_table` t
+        JOIN data_import_tool.`upload_column` c
+        ON t.`id`=c.`table_id`
+        WHERE RIGHT(c.`information_type`,5) = '{type}'
+        AND t.`id`={id}
+        GROUP BY 1;
+        """.format(id=self.table_id, type=data_type)
 
-        bucket.upload_file(local_path, s3_path)
+        columns = self.connection.execute(query).fetchall()
+        return columns
 
-        return s3_path
-
-
-
+    def get_query(self, data_type):
+        indexer = self._get_columns(data_type)
+        if indexer:
+            args = {
+                'table': indexer[0]['table'],
+                'columns': indexer[0]['indexes']
+            }
+            query = """
+                ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
+                """.format(**args)
+            return query
 

@@ -13,7 +13,7 @@ import botocore
 from csvkit import sql, table
 
 # Local module imports
-from .utils import copy_final_s3
+from .utils import S3Manager
 
 # Constants
 BUCKET_NAME = os.environ.get('S3_BUCKET')
@@ -22,46 +22,10 @@ ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
 TOTAL = 10 # Unfortunately we have to hardcode the total number of progress steps
 
-class Index(object):
-    """
-    This class handles creation of a query to generate an index for a given
-    column in a MySQL table
-    """
-    def __init__(self, table_id, connection):
-        self.table_id = table_id
-        self.connection = connection
-
-    def _get_columns(self, data_type):
-        query = """
-        SELECT CONCAT_WS('.','imports',t,'table') AS table,
-            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS indexes
-        FROM data_import_tool.`upload_table` t
-        JOIN data_import_tool.`upload_column` c
-        ON t.`id`=c.`table_id`
-        WHERE RIGHT(c.`information_type`,5) = '{type}'
-        AND t.`id`={id}
-        GROUP BY 1;
-        """.format(id=self.table_id, type=data_type)
-
-        columns = self.connection.execute(query).fetchall()
-        return columns
-
-    def get_query(self, data_type):
-        indexer = self._get_columns(data_type)
-        if indexer:
-            args = {
-                'table': indexer[0]['table'],
-                'columns': indexer[0]['indexes']
-            }
-            query = """
-                ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
-                """.format(**args)
-            return query
-
 
 class ProgressTracker(object):
     """
-    This class sends messages to the Redis server to update the state of the
+    This module sends messages to the Redis server to update the state of the
     task so that we can have an informative, pretty progress bar
     """
     def __init__(self, celery):
@@ -80,7 +44,7 @@ class ProgressTracker(object):
 
 class Loader(object):
     """
-    This class handles creation of all the queries necessary to create a table
+    This module handles creation of all the queries necessary to create a table
     and load local data into it, all while sending progress updates to a celery
     class instance
     """
@@ -157,7 +121,7 @@ class Loader(object):
 
         return query
 
-    def load_infile(self):
+    def run_load_infile(self):
         """
         The only public method of this class
 
@@ -235,12 +199,13 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     tracker.forward('Connecting to MySQL server')
 
     loader = Loader(self, tracker, table_name, columns, local_path)
-    create_table_query, sql_warnings = loader.load_infile()
+    create_table_query, sql_warnings = loader.run_load_infile()
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
     tracker.forward('Loading the file into S3')
-    final_s3_path = copy_final_s3(s3_path, table_name)
+    s3 = S3Manager(local_path, table_name)
+    final_s3_path = s3.copy_final_s3()
 
     # Return a preview of the top few rows in the table
     # to check that the casting was correct
