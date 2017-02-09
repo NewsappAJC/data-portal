@@ -101,8 +101,8 @@ class Loader(object):
         # Convert column types back to strings for use in the create table
         # statement
         types= ['{name} {raw_type}'.format(**x) for x in self.columns]
-        args = {'table': self.table, 'columns': types}
-        query = 'CREATE TABLE {table} ({columns});'.format(**args)
+        args = {'table': self.table, 'columns': (', ').join(types)}
+        query = 'CREATE TABLE imports.{table} ({columns});'.format(**args)
 
         return query
 
@@ -128,6 +128,7 @@ class Loader(object):
         Record all warnings raised by writing to the MySQL DB. MySQL doesn't
         always raise exceptions for data truncation (?!)
         """
+        sql_warnings = []
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
 
@@ -160,7 +161,7 @@ class Loader(object):
         return self.connection.execute('SELECT * FROM imports.{} LIMIT 5'.format(self.table))
 
     def end_connection(self):
-        self.connection.end()
+        self.connection.close()
 
 
 def sanitize(string):

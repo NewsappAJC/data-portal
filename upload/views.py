@@ -228,7 +228,7 @@ def check_task_status(request):
                        information_type=session_header['category'],
                        column_size=task_header['length'])
             c.save()
-            if c.information_type != None:
+            if c.information_type != 'None':
                 index.create_index(c.information_type)
 
 

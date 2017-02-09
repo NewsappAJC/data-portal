@@ -92,7 +92,7 @@ class S3Manager(object):
         # Copy the file to the permanent directory on S3 and delete the
         # temporary file
         self.client.copy(Bucket=self.bucket, CopySource={'Bucket': self.bucket, 'Key': tmp_path}, Key=unique_path)
-        self.client.delete_object(Bucket=self.bucket, Key=tmp_path)
+        # self.client.delete_object(Bucket=self.bucket, Key=tmp_path)
 
         return unique_path
 
@@ -198,7 +198,7 @@ class TableFormatter(object):
             name = col or str(i)
             if not col:
                 i += 1
-                name = str(i)
+                name = 'col{}'.format(str(i))
             else:
                 name = col
             headers.append({'name': name, 'sample_data': []})
@@ -227,8 +227,8 @@ class Index(object):
 
     def _get_columns(self, data_type):
         query = """
-        SELECT CONCAT_WS('.','imports',t,'table') AS table,
-            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS indexes
+        SELECT CONCAT_WS('.','imports',t.`table`) AS data_table,
+            CONCAT('`',GROUP_CONCAT(c.`column` SEPARATOR '`,`'),'`') AS index_fields
         FROM data_import_tool.`upload_table` t
         JOIN data_import_tool.`upload_column` c
         ON t.`id`=c.`table_id`
@@ -252,8 +252,8 @@ class Index(object):
         indexer = self._get_columns(data_type)
         if indexer:
             args = {
-                'table': indexer[0]['table'],
-                'columns': indexer[0]['indexes']
+                'table': indexer[0]['data_table'],
+                'columns': indexer[0]['index_fields']
             }
             query = """
                 ALTER TABLE {table} ADD FULLTEXT INDEX `name_index` ({columns})
