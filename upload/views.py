@@ -236,8 +236,6 @@ def check_task_status(request):
     # If response isn't JSON serializable then it's an error message.
     # Convert it to a string and return it
     try:
-        import pdb
-        pdb.set_trace()
         return JsonResponse(data)
     except TypeError:
         data['result'] = str(data['result'])

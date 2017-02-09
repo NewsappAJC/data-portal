@@ -102,7 +102,7 @@ class Loader(object):
         # statement
         types= ['{name} {raw_type}'.format(**x) for x in self.columns]
         args = {'table': self.table, 'columns': (', ').join(types)}
-        query = 'CREATE TABLE imports.{table} ({columns});'.format(**args)
+        query = 'CREATE TABLE imports.{table} ({columns}) ENGINE=MyISAM;'.format(**args)
 
         return query
 

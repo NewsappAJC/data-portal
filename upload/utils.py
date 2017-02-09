@@ -218,11 +218,10 @@ class Index(object):
     Args:
         table_id (string): The UniqueID of a table in the Django DB
         connection (sqlalchemy.engine.connection): A sqlalchemy connection
-                                                   object
     """
 
     def __init__(self, table_id, connection):
-        self.table_id = table_id
+        self.table_id = int(table_id)
         self.connection = connection
 
     def _get_columns(self, data_type):
@@ -232,7 +231,7 @@ class Index(object):
         FROM data_import_tool.`upload_table` t
         JOIN data_import_tool.`upload_column` c
         ON t.`id`=c.`table_id`
-        WHERE RIGHT(c.`information_type`,5) = '{type}'
+        WHERE c.`information_type`='{type}'
         AND t.`id`={id}
         GROUP BY 1;
         """.format(id=self.table_id, type=data_type)

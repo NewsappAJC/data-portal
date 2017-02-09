@@ -22,7 +22,7 @@ class Column(models.Model):
         (None,"No category"),
         ("full_name","Full Name"),
         ("last_name","Last Name"),
-        ("first name","First Name"),
+        ("first_name","First Name"),
         ("middle_name","Middle Name"),
         ("other_name","Other Name"),
         ("full_add","Full Address"),
