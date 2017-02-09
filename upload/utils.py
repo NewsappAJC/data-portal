@@ -191,7 +191,17 @@ class TableFormatter(object):
 
         # Clean the column names to prevent SQL injection
         ccolumns = self._clean(columns)
-        headers = [{'name': column, 'sample_data': []} for column in ccolumns]
+        headers = []
+        i = 0
+        for col in ccolumns:
+            # Provide default names for unnamed columns
+            name = col or str(i)
+            if not col:
+                i += 1
+                name = str(i)
+            else:
+                name = col
+            headers.append({'name': name, 'sample_data': []})
 
         # Append the sample data to the header objects
         for i in range(len(headers)):
