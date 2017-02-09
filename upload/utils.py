@@ -91,7 +91,7 @@ class S3Manager(object):
 
         # Copy the file to the permanent directory on S3 and delete the
         # temporary file
-        self.client.copy(Bucket=self.bucket, CopySource=tmp_path, Key=unique_path)
+        self.client.copy(Bucket=self.bucket, CopySource={'Bucket': self.bucket, 'Key': tmp_path}, Key=unique_path)
         self.client.delete_object(Bucket=self.bucket, Key=tmp_path)
 
         return unique_path
