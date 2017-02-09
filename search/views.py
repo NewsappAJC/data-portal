@@ -33,9 +33,9 @@ def search(request):
 
 
 def get_presigned_url(request):
-    query = request.session.get('sql_query')
+    query = request.session.get('sql_search_query')
     data_url = get_url(query)
-    return JsonResponse(data_url)
+    return JsonResponse({'url': data_url})
 
 def search_detail(request):
     results = []

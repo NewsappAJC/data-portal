@@ -50,6 +50,7 @@ class S3Manager(object):
         Returns:
             key (string): A non-duplicate filename
         """
+        key = key[:-4]
         try:
             # Boto3 doesn't have a method to check if a given key already exists.
             # Trying to get metadata and catching the resulting ClientError
@@ -65,10 +66,10 @@ class S3Manager(object):
                 key = re.sub(r, '', key)
 
             # Recursive call to check with updated filename suffix
-            return self._check_duplicates('{}({})'.format(key, str(i)), i)
+            return self._check_duplicates('{}({}).csv'.format(key, str(i)), i)
 
         except botocore.exceptions.ClientError:
-            return key
+            return key + '.csv'
 
 
     def copy_final(self, tmp_path):
@@ -116,7 +117,7 @@ class S3Manager(object):
 
         return s3_path
 
-    def generate_presigned_url(self, key):
+    def get_presigned_url(self, key):
         p = {'Bucket': self.bucket, 'Key': key}
         url = self.client.generate_presigned_url(ClientMethod='get_object', Params=p)
         return url

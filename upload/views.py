@@ -121,8 +121,6 @@ def write_to_db(request):
         headers = request.session['headers']
 
         if len(keys) < len(headers):
-            import pdb
-            pdb.set_trace()
             messages.add_message(request, messages.ERROR,
                                  'Please select a category for every column')
             return redirect(reverse('upload:categorize'))

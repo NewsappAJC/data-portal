@@ -1,12 +1,12 @@
 'use strict';
 
 window.onload = function() {
-  function getURL(id) {
+  function getURL() {
     $.ajax({
-      url: './get-presigned-url/' + id + '/',
+      url: '/search/get-presigned-url/',
       type: 'GET',
       success: function(res) {
-        window.location.href = res;
+        window.location.href = res.url;
       },
       error: function(e) {
         console.log(e);
@@ -18,8 +18,7 @@ window.onload = function() {
     var $urlButtons = $('.url-btn');
 
     $urlButtons.on('click', function() {
-      var id = this.dataset.id;
-      getURL(id);
+      getURL();
     })
     $('#search-submit, #detail-submit').on('click', function() {
       $(this).button('loading');

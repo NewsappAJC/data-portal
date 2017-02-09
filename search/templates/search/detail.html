@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block resources %}
+  <script type="text/javascript" src="{% static "js/search.js"%}"></script>
+{% endblock %}
+
 {% block content %}
 
 {% load highlight %}

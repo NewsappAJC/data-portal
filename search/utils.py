@@ -1,5 +1,4 @@
 # Stdlib imports
-from __future__ import unicode_literals
 import os
 import csv
 
@@ -66,14 +65,14 @@ def get_url(sql_query):
 
     # Add error handling here for cases where the search results array is empty
     with open(TMP_PATH, 'wb') as f:
-        fields = search_result[0].keys()
-        writer = csv.writer(f, delimiter=',', fieldnames=fields)
+        # fields = search_result[0].keys()
+        writer = csv.writer(f, delimiter=',')
         for row in search_result[1:]:
-            writer.writeheader()
-            writer.write_row(row.values())
+            # writer.writeheader()
+            writer.writerow(row.values())
 
     s3 = S3Manager(local_path=TMP_PATH, table_name='ajc-search-results',
-                   bucket=BUCKET_NAME)
+                   bucket_name=BUCKET_NAME)
     unique_key = s3.write_file()
     url = s3.get_presigned_url(unique_key)
     return url
@@ -99,8 +98,9 @@ def warehouse_search(query, data_type='name'):
         results = []
         for table in tables_to_search:
             try:
-                query, result = table_search(query, table['table'],
-                                             table['search_columns'],True)
+                throwaway_query, result = table_search(query, table['table'],
+                                                       table['search_columns'],
+                                                       True)
                 if result:
                     result['id'] = int(table['id'])
                     results.append(result)
