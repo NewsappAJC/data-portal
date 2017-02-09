@@ -1,21 +1,14 @@
 # Stdlib imports
-from __future__ import unicode_literals
 import os
 
 # Django imports
 from django.utils.html import escape
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.conf import settings
-
-# Third-party imports
-import boto3
-import botocore
 
 # Local module imports
 #from .forms import DataForm
-from .utils import warehouse_search, table_search
-from upload.models import Table
+from .utils import warehouse_search, table_search, get_url
 
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 
@@ -39,22 +32,10 @@ def search(request):
     return render(request, 'search/search.html', context)
 
 
-def get_presigned_url(request, id):
-    table = Table.objects.get(id=id)
-    if not table.path:
-        return JsonResponse(status=400, safe=False)
-
-    path = table.path
-    try:
-        client = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY,
-                              aws_secret_access_key=settings.AWS_SECRET_KEY)
-    except botocore.exceptions.ClientError as e:
-        return JsonResponse(str(e))
-
-    p = {'Bucket': BUCKET_NAME, 'Key': path}
-    url = client.generate_presigned_url(ClientMethod='get_object', Params=p)
-
-    return JsonResponse(url)
+def get_presigned_url(request):
+    query = request.session.get('sql_query')
+    data_url = get_url(query)
+    return JsonResponse(data_url)
 
 def search_detail(request):
     results = []
@@ -65,7 +46,13 @@ def search_detail(request):
         search_columns = request.POST.get('search_columns', None)
         preview = False
 
-        results.append(table_search(query, table, search_columns, preview))
+        # Return a maximum of 50 rows and create a link to download a CSV
+        # with all the search results
+        sql_query, search_results = table_search(query, table, search_columns, preview)
+        results.append(search_results)
+        # Save the SELECT query to get the full search results to session storage
+        request.session['sql_search_query'] = sql_query
+
         context = {'query': query, 'result': results[0], 'detail': True}
 
     else:

@@ -164,14 +164,6 @@ class Loader(object):
         self.connection.close()
 
 
-def sanitize(string):
-    """
-    Substitute all non alphanumeric/underscore (_) characters with empty string
-    """
-    r = re.compile(r'\W')
-    return re.sub(r, '', string)
-
-
 @shared_task(bind=True)
 def load_infile(self, s3_path, table_name, columns, **kwargs):
     """

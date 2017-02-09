@@ -26,7 +26,7 @@ class S3Manager(object):
         local_path (string): The path to the CSV on the user's computer
         table_name (string): The name of the table
     """
-    def __init__(self, local_path, table_name):
+    def __init__(self, local_path, table_name, bucket_name):
         key = settings.AWS_ACCESS_KEY
         secret = settings.AWS_SECRET_KEY
 
@@ -35,6 +35,7 @@ class S3Manager(object):
         self.bucket = BUCKET_NAME
         self.local_path = local_path
         self.table_name = table_name
+        self.bucket_name = bucket_name
 
     def _check_duplicates(self, key, i=0):
         """
@@ -70,7 +71,7 @@ class S3Manager(object):
             return key
 
 
-    def copy_final_s3(self, tmp_path):
+    def copy_final(self, tmp_path):
         """
         Copy the original CSV file from the tmp bucket to its permanent home on s3
 
@@ -96,9 +97,11 @@ class S3Manager(object):
 
         return unique_path
 
-    def write_tempfile_to_s3(self):
+    def write_file(self):
         """
-        Write a temporary file to the S3 server.
+        Write a file to the S3 server. This is used for uploading temporary
+        files, either when a user is in the process of loading to the database
+        or when they want to download search results after running a query.
 
         Args:
             local_path (string): Path to local CSV file
@@ -112,6 +115,19 @@ class S3Manager(object):
             self.client.put_object(Bucket=self.bucket, Key=s3_path, Body=f)
 
         return s3_path
+
+    def generate_presigned_url(self, key):
+        p = {'Bucket': self.bucket, 'Key': key}
+        url = self.client.generate_presigned_url(ClientMethod='get_object', Params=p)
+        return url
+
+    def download_query_results(self):
+        """
+        Generate a CSV from search results, write it to the /tmp directory in
+        the S3 bucket, and generate a temporary presigned URL so the user can
+        download the dataset
+        """
+
 
 
 class TableFormatter(object):
