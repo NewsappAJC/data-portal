@@ -59,11 +59,11 @@ class Loader(object):
         engine = sqlalchemy.create_engine(URL + '?local_infile=1')
         self.connection = engine.connect()
 
-    def _get_column_types(self, filepath, headers):
-        self._forward('Inferring datatype of columns')
+    def _get_column_types(self):
+        self.tracker.forward('Inferring datatype of columns')
         # Load the csv and use csvkit's sql.make_table utility 
         # to infer the datatypes of the columns.
-        with open(filepath,'r') as f:
+        with open(self.path,'r') as f:
             csv_table = table.Table.from_csv(f, delimiter=',')
 
         sql_table = sql.make_table(csv_table)
@@ -88,21 +88,19 @@ class Loader(object):
             else:
                 clean_length = None
 
-            headers[i]['datatype'] = clean_type.lower()
-            headers[i]['raw_type'] = raw_type
-            headers[i]['length'] = clean_length
-
-        return headers
+            self.columns[i]['datatype'] = clean_type.lower()
+            self.columns[i]['raw_type'] = raw_type
+            self.columns[i]['length'] = clean_length
 
     def _make_create_table_q(self):
         """
         Generate a CREATE TABLE query that casts each column as the right type
         """
-        columns = self._get_column_types()
+        self._get_column_types()
 
         # Convert column types back to strings for use in the create table
         # statement
-        types= ['{name} {raw_type}'.format(**x) for x in columns]
+        types= ['{name} {raw_type}'.format(**x) for x in self.columns]
         args = {'table': self.table, 'columns': types}
         query = 'CREATE TABLE {table} ({columns});'.format(**args)
 
@@ -133,7 +131,7 @@ class Loader(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
 
-            create_table_query = self._make_create_table_q(self.table, self.columns)
+            create_table_query = self._make_create_table_q()
             load_data_query = self._make_load_table_q()
 
             # If an SQL error is thrown, end the process and return a summary
@@ -198,14 +196,14 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     # Keep track of progress
     tracker.forward('Connecting to MySQL server')
 
-    loader = Loader(self, tracker, table_name, columns, local_path)
+    loader = Loader(tracker, table_name, columns, local_path)
     create_table_query, sql_warnings = loader.run_load_infile()
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
     tracker.forward('Loading the file into S3')
     s3 = S3Manager(local_path, table_name)
-    final_s3_path = s3.copy_final_s3()
+    final_s3_path = s3.copy_final_s3(s3_path)
 
     # Return a preview of the top few rows in the table
     # to check that the casting was correct
