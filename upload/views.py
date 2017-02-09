@@ -228,6 +228,7 @@ def check_task_status(request):
                        information_type=session_header['category'],
                        column_size=task_header['length'])
             c.save()
+            # Need to fix this so that it's stored as None
             if c.information_type != 'None':
                 index.create_index(c.information_type)
 
@@ -235,6 +236,8 @@ def check_task_status(request):
     # If response isn't JSON serializable then it's an error message.
     # Convert it to a string and return it
     try:
+        import pdb
+        pdb.set_trace()
         return JsonResponse(data)
     except TypeError:
         data['result'] = str(data['result'])
@@ -256,7 +259,6 @@ def get_detail(request, id):
     # TODO break this out into a separate function so the code isn't duplicated
     dataf = []
     dataf.append([x for x in data.keys()])
-    dataf.extend([list(value) for key, value in enumerate(data) if key < 5])
 
     context = {'table': table, 'headers': dataf[0], 'rows': dataf[1:]}
     return render(request, 'upload/detail.html', context)

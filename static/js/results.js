@@ -3,7 +3,7 @@ function getResult(cb) {
     type: 'GET', 
     url: '/check-task-status/',
     success: function(res) {
-      if (cb(res) == 'incomplete') {
+      if (cb(res) === 'incomplete') {
         // Poll the server every half second until a result is received
         setTimeout(getResult(checkResponseStatus), 500)
       }
@@ -19,7 +19,6 @@ function getResult(cb) {
 // necessary, any warnings that were returned. If the task fails, render an
 // error message explaining why
 function checkResponseStatus(res) {
-    console.log(res)
     if (res.status == 'PROGRESS') {
       $('#progress-bar').css('width', (100 * res.result.current / res.result.total) + '%')
       $('#progress-message').html(res.result.message)
@@ -28,7 +27,7 @@ function checkResponseStatus(res) {
     else if (res.status === 'SUCCESS') {
       $('#progress-bar').removeClass('active')
       // If a celery task ends its status is automatically SUCCESS, even if there
-      // was an error
+      // was an error.
       if (res.result.error) {
         $('#current-state').html('<span class="label label-danger">FAILURE</span>');
         $('#progress-message').html('Error')
@@ -52,7 +51,7 @@ function checkResponseStatus(res) {
       $('#message').html(`
         <div class="alert alert-success">
           <p>Table <strong>${res.result.table}</strong> 
-            was loaded into the <strong>${res.result.db}</strong> database.</p>
+            was loaded into the <strong>imports</strong> database.</p>
           <p>
             <a href="/" class="alert-link">Go back to the upload form</a>
           </p>
@@ -114,6 +113,7 @@ function generateTable(res) {
   });
 
   var markup = `
+    <div class="small">Sample data; Not all rows will be shown</div>
     <table class="table table-striped">
       <thead>
         <tr>${headers.join('')}</tr>

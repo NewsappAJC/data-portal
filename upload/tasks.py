@@ -217,6 +217,7 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
 
     dataf = []
     dataf.append([x for x in preview.keys()])
+    dataf.extend([list(value) for i, value in enumerate(preview) if i < 5])
 
     return {'error': False,
         'table': table_name,
