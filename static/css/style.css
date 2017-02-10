@@ -100,6 +100,10 @@ label {
   overflow: scroll;
 }
 
+.detail-table-holder {
+  height: 500px;
+}
+
 .result-item {
   margin-top: 40px;
 }

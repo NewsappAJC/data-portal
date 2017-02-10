@@ -113,7 +113,7 @@ function generateTable(res) {
   });
 
   var markup = `
-    <div class="small">Sample data; Not all rows will be shown</div>
+    <div class="small">Sample data; Not all rows may be shown</div>
     <table class="table table-striped">
       <thead>
         <tr>${headers.join('')}</tr>
