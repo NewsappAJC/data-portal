@@ -5,6 +5,6 @@ from . import views
 urlpatterns = [
     url(r'^$', views.search),
     url(r'^detail/$', views.search_detail),
-    url(r'^get-presigned-url/$', views.get_presigned_url, name='get_presigned_url'),
+    url(r'^get-all-results/$', views.get_all_results, name='get_all_results'),
 ]
 

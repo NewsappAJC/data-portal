@@ -1,12 +1,8 @@
 # Stdlib imports
 import os
-import csv
 
 # Third-party imports
 from sqlalchemy import create_engine
-
-# Local module imports
-from upload.utils import S3Manager
 
 # Constants
 DATA_WAREHOUSE_URL = os.environ.get('DATA_WAREHOUSE_URL')
@@ -15,7 +11,7 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 
 # Takes a name_query string and returns a list of dicts
 # containing database information, columns searched and a SQLalchemy query result
-def table_search(query, table, search_columns, preview):
+def table_search(query, table, search_columns, preview=False):
     # Uncomment the logic below if you want to treat spaces as logical AND
     # r = re.compile(r'(^.)')
     # query = re.sub(r'[^\w\s]', '', query) # Strip out all non-alphanumeric characters
@@ -29,9 +25,7 @@ def table_search(query, table, search_columns, preview):
         '''.format(table=table, search_columns=search_columns, query=query)
 
     if preview:
-        sql_query+='LIMIT 5'
-    else:
-        sql_query+='LIMIT 50'
+        sql_query+='LIMIT {}'.format(str(preview))
 
     connection = connect_to_db()
     search_result = connection.execute(sql_query).fetchall()
@@ -49,33 +43,15 @@ def table_search(query, table, search_columns, preview):
 
         result['preview']['data'] = values
 
-        if not preview:
+        if len(values) < 50:
             result['count'] = len(values)
+        else:
+            result['count'] = 'more than 50'
 
         return (sql_query, result)
 
     else:
         return None
-
-
-def get_url(sql_query):
-    connection = connect_to_db()
-    search_result = connection.execute(sql_query).fetchall()
-    connection.close()
-
-    # Add error handling here for cases where the search results array is empty
-    with open(TMP_PATH, 'wb') as f:
-        # fields = search_result[0].keys()
-        writer = csv.writer(f, delimiter=',')
-        for row in search_result[1:]:
-            # writer.writeheader()
-            writer.writerow(row.values())
-
-    s3 = S3Manager(local_path=TMP_PATH, table_name='ajc-search-results',
-                   bucket_name=BUCKET_NAME)
-    unique_key = s3.write_file()
-    url = s3.get_presigned_url(unique_key)
-    return url
 
 
 def warehouse_search(query, data_type='name'):
@@ -98,12 +74,18 @@ def warehouse_search(query, data_type='name'):
         results = []
         for table in tables_to_search:
             try:
-                throwaway_query, result = table_search(query, table['table'],
-                                                       table['search_columns'],
-                                                       True)
+                params = {
+                    'query': query,
+                    'table': table['table'],
+                    'search_columns': table['search_columns'],
+                    'preview': 5
+                }
+                throwaway, result = table_search(**params)
+
                 if result:
                     result['id'] = int(table['id'])
                     results.append(result)
+
             except TypeError:
                 continue
 

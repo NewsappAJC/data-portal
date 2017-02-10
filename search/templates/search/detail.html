@@ -14,10 +14,16 @@
     Found <span class="count">{{ result.count }}</span> 
     matches for {{ query }} in 
     <span class="table-title"> {{ result.table }} </span>
-    <button class="btn btn-success url-btn" data-id="{{result.table.id}}">
-      Download Search Results as CSV
-    </button>
   </h3>
+  <div class="small">
+    If there are more than 50 rows the results shown here will be truncated.
+    Click download to get all the search results as a CSV.
+  </div>
+  <button class="btn btn-success url-btn"
+    data-loading-text="Generating CSV..."
+    data-id="{{result.table.id}}">
+      Download All Search Results
+  </button>
 
   <div class="results-holder">
     <table class="table table-striped">
