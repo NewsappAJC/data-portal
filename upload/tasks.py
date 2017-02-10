@@ -195,8 +195,8 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
     tracker.forward('Loading the file into S3')
-    s3 = S3Manager(local_path, table_name)
-    final_s3_path = s3.copy_final_s3(s3_path)
+    s3 = S3Manager(local_path, table_name, BUCKET_NAME)
+    final_s3_path = s3.copy_final(s3_path)
 
     # Return a preview of the top few rows in the table
     # to check that the casting was correct

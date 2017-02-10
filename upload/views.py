@@ -62,7 +62,7 @@ def upload_file(request):
             # Write the CSV to a temporary file in the Amazon S3 bucket that
             # we will retrieve later
             s3 = S3Manager(path, table_name, BUCKET_NAME)
-            request.session['s3_path'] = s3.write_tempfile_to_s3()
+            request.session['s3_path'] = s3.write_file()
 
             # Sanitize the column headers
             formatter = TableFormatter(path)
