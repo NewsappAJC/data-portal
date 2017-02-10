@@ -11,7 +11,7 @@ register = template.Library()
 def highlight(value, arg):
     """Wraps search term in highlight span securely to avoid XSS attack"""
     try:
-        arg = arg.replace(r'&quot;', '')
+        arg = re.sub(r'&quot;|"', '', arg)
         exp = re.compile('(.+)?(' + re.escape(arg) + ')(.+)?', re.IGNORECASE)
         if exp.search(value):
             g = exp.search(value)
