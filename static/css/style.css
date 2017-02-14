@@ -132,3 +132,14 @@ label {
   color: black;
   cursor: pointer;
 }
+
+.search-form {
+  padding: 0px 15px;
+  background-color: #EFEFEF;
+}
+
+.advanced-search {
+  text-decoration: underline;
+  color: #337ab7;
+  cursor: pointer;
+}

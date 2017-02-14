@@ -13,20 +13,19 @@
 
 <form method="POST" class="form-horizontal" action="/search/">
 {% csrf_token %}
-  <div class="form-group">
+  <div class="search-form form-group">
     <div class="row">
-      <div class="col-sm-4">
-        <label for="query" class="control-label">Enter search term/s:</label>
-        <input type="text" class="form-control" name="query">
-        <span class="small">If you want to match a full name
-          wrap it in quotation marks like so: "Nathan Deal"</span>
-      </div>
-    </div>
-
-
-    <div class="row">
-      <div class="col-sm-2">
-        <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
+      <div class="col-sm-12">
+        <h2>Search <strong>All Tables</strong></h2>
+        <div class="row">
+          <div class="col col-sm-8">
+            <input type="text" class="form-control" name="query">
+          </div>
+          <div class="col col-sm-2">
+            <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
+          </div>
+        </div>
+        <div class="advanced-search">More search options</div>
       </div>
     </div>
 
