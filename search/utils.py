@@ -54,21 +54,23 @@ def table_search(query, table, search_columns, preview=False):
         return None
 
 
-def warehouse_search(query, data_type='name'):
+def warehouse_search(query, filter):
     if len(query)>0:
         connection = connect_to_db()
+        filter = filter or ['name']
+        data_type = '("{}")'.format(('","').join(filter))
 
         #SQL statement below pulls unique database-table-columns combos
         #to feed into a search
-        tables_to_search = connection.execute(
-            '''SELECT t.table, t.id,
+        fquery = '''SELECT t.table, t.id,
             CONCAT('`',GROUP_CONCAT(c.column SEPARATOR '`,`'),'`') AS search_columns
             FROM data_import_tool.upload_table t
             JOIN data_import_tool.upload_column c
             ON t.id=c.table_id
-            WHERE RIGHT(c.information_type,4) = '{}'
-            GROUP BY 1'''.format(data_type)).fetchall()
+            WHERE SUBSTRING_INDEX(c.information_type,"_",-1) IN {}
+            GROUP BY 1'''.format(data_type)
 
+        tables_to_search = connection.execute(fquery).fetchall()
         connection.close()
 
         results = []

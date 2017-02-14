@@ -143,3 +143,11 @@ label {
   color: #337ab7;
   cursor: pointer;
 }
+
+input.check {
+  margin-right: 3px;
+}
+
+div#search-filters label {
+  margin-right: 5px;
+}

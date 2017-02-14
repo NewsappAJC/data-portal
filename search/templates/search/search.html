@@ -25,7 +25,14 @@
             <button class="btn btn-primary" id="search-submit" data-loading-text="Searching..." type="submit">Search</button>
           </div>
         </div>
-        <div class="advanced-search">More search options</div>
+        <div id="search-filters" style="display:none;">
+          <label><input type="checkbox" class="check" name="filter" value="name" checked="checked">Name</input></label>
+          <label><input type="checkbox" class="check" name="filter" value="add">Address</input></label>
+        </div>
+        <div id="toggle-filters" class="advanced-search">
+          <span id="show">Show </span>
+          <span id="hide" style="display:none;">Hide </span>
+          search options</div>
       </div>
     </div>
 

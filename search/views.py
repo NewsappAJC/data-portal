@@ -21,12 +21,18 @@ def search(request):
 
     if request.method == 'POST':
         query = request.POST.get('query', None)
+        filters = request.POST.get('filter', None)
+        try:
+            filters = filters.split() # If only one is selected it'll be a string
+        except AttributeError:
+            pass
+
         if not query:
             context['error'] = 'Please enter a search term'
 
         else:
             context['query'] = escape(query)
-            res = warehouse_search(query)
+            res = warehouse_search(query, filters)
             if not res:
                 context['error'] = '''No results found for "{}".'''.format(query)
             else:
