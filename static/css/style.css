@@ -155,3 +155,21 @@ div#search-filters label {
 #file-submit {
   margin-left: -15px;
 }
+
+#records-form {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.text-uppercase {
+  color: #afafaf;
+  font-weight: 600;
+}
+
+.emphasis {
+  color: black;
+}
+
+.search-metadata {
+  margin-bottom: -15px;
+}

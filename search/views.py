@@ -46,6 +46,7 @@ def search(request):
                 context['error'] = '''No results found for "{}".'''.format(query)
             else:
                 context['results'] = res
+                context['num_tables'] = len(res)
 
     return render(request, 'search/search.html', context)
 

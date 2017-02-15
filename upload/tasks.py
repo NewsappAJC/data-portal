@@ -1,4 +1,4 @@
-# Standard library imports
+# Stdlib imports
 from __future__ import absolute_import
 import os
 import re
@@ -15,25 +15,36 @@ from csvkit import sql, table
 # Local module imports
 from .utils import S3Manager
 
-# Constants
+# Constants TODO: these should be set in settings and accessed that way, so
+# they don't have to be imported in every single file the way we're currently
+# doing it
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
 ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
-TOTAL = 10 # Unfortunately we have to hardcode the total number of progress steps
-
+TOTAL = 8# Unfortunately we have to hardcode the total number of progress steps
 
 class ProgressTracker(object):
     """
     This module sends messages to the Redis server to update the state of the
     task so that we can have an informative, pretty progress bar
     """
-    def __init__(self, celery):
+    def __init__(self, celery, total=TOTAL):
         self.celery = celery
-        self.total = TOTAL
+        self.total = total
         self.step = 0
 
     def forward(self, message):
+        """
+        This method increments the current step and updates the state of the
+        celery process with a message.
+
+        Arguments:
+            message (string): Message you want to display on the progress bar
+
+        Returns:
+            void
+        """
         self.step += 1
         meta = {'message': message,
                 'error': False,
@@ -107,6 +118,13 @@ class Loader(object):
         return query
 
     def _make_load_table_q(self):
+        """
+        This method generates a LOAD INFILE query
+
+        Returns:
+            query (string): A formatted LOAD INFILE query with a path to the
+            local file
+        """
         # We've sanitized inputs to avoid risk of SQL injection. To understand
         # of why we're sanitizing manually instead of passing args to 
         # sqlalchemy's execute method, see:
@@ -121,12 +139,8 @@ class Loader(object):
 
     def run_load_infile(self):
         """
-        The only public method of this class
-
-        Creates a table in MySQL database and uploads a CSV to it
-
-        Record all warnings raised by writing to the MySQL DB. MySQL doesn't
-        always raise exceptions for data truncation (?!)
+        This method creates a table in the MySQL database and uploads a CSV.
+        It records all warnings raised by writing to the MySQL DB.
         """
         sql_warnings = []
         with warnings.catch_warnings(record=True) as w:
@@ -163,7 +177,8 @@ class Loader(object):
     def end_connection(self):
         self.connection.close()
 
-
+# bind=True gives us access to this celery task instance through the self 
+# parameter
 @shared_task(bind=True)
 def load_infile(self, s3_path, table_name, columns, **kwargs):
     """

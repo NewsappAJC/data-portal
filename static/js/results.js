@@ -1,7 +1,7 @@
 function getResult(cb) {
   $.ajax({
     type: 'GET', 
-    url: '/check-task-status/',
+    url: '/upload/check-task-status/',
     success: function(res) {
       if (cb(res) === 'incomplete') {
         // Poll the server every half second until a result is received
@@ -33,12 +33,14 @@ function checkResponseStatus(res) {
         $('#progress-message').html('Error')
         $('#message').html(`
           <div class="alert alert-danger sql-error">
-            <p>There was an error uploading to the database: </p>
+            <p>
+              <span class="glyphicon glyphicon-remove"></span>
+              There was an error uploading to the database: </p>
             <p>
               ${res.result.errorMessage}
             </p>
             <p>
-              <a href="/" class="alert-link">Go back to the upload form</a>
+              <a href="/" class="alert-link">Go back to the upload page</a>
             </p>
           </div>
         `)
@@ -50,10 +52,12 @@ function checkResponseStatus(res) {
       $('#current-state').html('<span class="label label-success">SUCCESS</span>');
       $('#message').html(`
         <div class="alert alert-success">
-          <p>Table <strong>${res.result.table}</strong> 
+          <p>
+           <span class="glyphicon glyphicon-ok-circle"></span>
+            Table <strong>${res.result.table}</strong> 
             was loaded into the <strong>imports</strong> database.</p>
           <p>
-            <a href="/" class="alert-link">Go back to the upload form</a>
+            <a href="/" class="alert-link">Go back to the upload page</a>
           </p>
         </div>
       `)
@@ -71,8 +75,10 @@ function checkResponseStatus(res) {
         $('#current-state').html('<span class="label label-warning">SUCCESS</span>');
         $('#message').html(`
           <div class="alert alert-warning">
-            <p>The upload succeeded, but there were <a href="#warnings" class="alert-link">warnings</a>.</p>
-            <p><a href="/" class="alert-link">Go back to the upload form</a></p>
+            <p>
+            <span class="glyphicon glyphicon-alert"></span>
+            The upload succeeded, but there were <a href="#warnings" class="alert-link">warnings</a>.</p>
+            <p><a href="/" class="alert-link">Go back to the upload page</a></p>
           </div>
         `)
       }

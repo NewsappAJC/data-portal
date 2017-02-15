@@ -28,7 +28,7 @@ function postForm(data) {
     success: function(res) {
       // Redirect to the categorize page if form validates and upload to S3
       // succeeds
-      window.location.href = '/categorize/';
+      window.location.href = './categorize/';
     },
     error: function(res) {
       addErrorMessages(JSON.parse(res.responseJSON));
