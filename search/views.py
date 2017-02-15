@@ -9,8 +9,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 # Local module imports
-#from .forms import DataForm
-from .utils import warehouse_search, table_search, connect_to_db
+from .utils import SearchManager
 
 BUCKET_NAME = os.environ.get('S3_BUCKET')
 TMP_PATH = os.path.join('/tmp', 'ajc-import-searchfile.csv')
@@ -32,7 +31,8 @@ def search(request):
 
         else:
             context['query'] = escape(query)
-            res = warehouse_search(query, filters)
+            searchManager = SearchManager()
+            res = searchManager.warehouse_search(query, filters)
             if not res:
                 context['error'] = '''No results found for "{}".'''.format(query)
             else:
@@ -42,11 +42,10 @@ def search(request):
 
 
 def get_all_results(request):
-    query = request.session.get('sql_search_query')
+    sql_query = request.session.get('sql_search_query')
 
-    connection = connect_to_db()
-    search_result = connection.execute(query).fetchall()
-    connection.close()
+    searchManager = SearchManager()
+    search_result = searchManager.simple_query(sql_query)
 
     # Add error handling here for cases where the search results array is empty
     with open(TMP_PATH, 'wb') as f:
@@ -69,8 +68,11 @@ def search_detail(request):
 
         # Return a maximum of 50 rows and create a link to download a CSV
         # with all the search results
-        sql_query, search_results = table_search(query, table, search_columns, 50)
-        results.append(search_results)
+        searchManager = SearchManager()
+        params = {'query': query, 'table': table,
+                  'search_columns': search_columns, 'preview': 50}
+        sql_query, search_result = searchManager.table_search(**params)
+        results.append(search_result)
 
         # Strip the LIMIT clause out of the SQL query and save it to session
         # storage

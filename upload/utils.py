@@ -1,6 +1,3 @@
-"""
-A collection of utility classes for use elsewhere in the app
-"""
 # Python standard lib imports
 import os
 from datetime import date
