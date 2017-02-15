@@ -6,125 +6,122 @@
 {% endblock %}
 
 {% block content %}
-<a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
 <div class="row">
 
   <div class="col-sm-3 sidebar">
-
-    <h4>Looking for a dataset?</h4>
-    <p><a href="/search/">Go to the search page</a></p>
-
-    <h4>Recent uploads</h4>
-    <ul>
+    <h3>Recent uploads</h3>
+    <div>
       {% for upload in uploads %}
-        <li>
-          <h4 class="table-title">{{upload.table}}</h4>
+        <div class="table-teaser">
+          <h4 class="list-table-title">
+            <a href="/tables/{{upload.table.id}}">{{upload.table}}</a>
+          </h4>
           <div class="timestamp">{{upload.upload_time}}</div>
           <div class="topic">Topic: {{upload.topic}}</div>
           <div><em>Uploaded by {{upload.user}}</em></div>
-        </li>
+        </div>
       {% endfor %}
-    </ul>
-
-    <h4>Found a bug?</h4>
-    <p>Contact the authors</p>
-    <p>
-      <a href="mailto:jonathan.cox@ajc.com">Jonathan Cox</a>
-    </p>
-    <p>
-      <a href="mailto:jeff.ernsthausen@ajc.com">Jeff Ernsthausen</a>
-    </p>
-
+    </div>
   </div><!--sidebar-->
 
   <div class="upload-form-holder col-sm-9">
-    <div class="page-header"><h3>Upload a CSV</h3></div>
-
     <form enctype="multipart/form-data" class="form" id="upload-form" action="/" method="post">
     <input type="hidden" name="tempfile" id="tempfile"/>
       {% csrf_token %}
       <div class="row">
-
         <div class="db-core-inputs">
-          <div class="col-sm-8">
-            <div class="form-group">
-              <label>{{ form.data_file.label }}</label>
-              {{form.data_file}}
-              <div class="errors"></div>
+          <h3><strong>Select</strong> a CSV</h3>
+          <div class="row">
+            <div class="col-sm-8">
+              <div class="form-group">
+                {{form.data_file}}
+                <div class="errors"></div>
+              </div>
             </div>
-          </div>
-          <div class="col-sm-3">
+          </div><!--/.row-->
+          <div style="clear:both;"></div>
+        </div><!--db-core-inputs-->
+      </div>
+
+      <div class="row">
+        <h3><strong>Table</strong> Details</h3>
+        <div class="row">
+          <div class="col-sm-4">
             <div class="form-group">
-              <label>{{ form.table_name.label }}</label>
               {{form.table_name}}
               <div class="errors"></div>
             </div>
           </div>
-          <div style="clear:both;"></div>
-        </div><!--db-core-inputs-->
-
-        <div class="table-metadata">
+        </div><!--/.row-->
+        <div class="row">
           <div class="col-sm-4">
             <div class="form-group">
-              <label>{{ form.press_contact.label }}</label>
-              {{form.press_contact}}
-              <div class="errors"></div>
-            </div>
-          </div>
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact_number.label }}</label>
-              {{form.press_contact_number}}
-              <div class="errors"></div>
-            </div>
-          </div>
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact_email.label }}</label>
-              {{form.press_contact_email}}
-              <div class="errors"></div>
-            </div>
-          </div>
-
-          <div class="col-sm-4">
-            <div class="form-group">
-              <label>{{ form.press_contact_type.label }}</label>
-              {{form.press_contact_type}}
-              <div class="errors"></div>
-            </div>
-          </div>
-
-          <div class="col-sm-6">
-            <div class="form-group">
-              <label>{{ form.topic.label }}</label>
               {{form.topic}}
               <div class="errors"></div>
             </div>
           </div>
-          <div class="col-sm-6">
+        </div>
+        <div class="row">
+          <div class="col-sm-4">
             <div class="form-group">
-              <label>{{ form.source.label }}</label>
               {{form.source}}
               <div class="errors"></div>
             </div>
           </div>
-
+        </div>
+        <div class="row">
           <div class="col-sm-4">
             <div class="form-group">
-              <label>{{ form.next_update.label }}</label>
-              <input class="form-control" placeholder='mm/dd/yyyy'/>
+              <input class="form-control" placeholder='When to update next'/>
               <div class="errors"></div>
             </div>
           </div>
+        </div>
+      </div><!--/.row-->
 
-        </div><!--table-metadata-->
-      </div><!--row-->
-    </form>
+      <div class="row">
+        <div class="press-inputs">
+          <h3><strong>Contact</strong> Details</h3>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_type}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_number}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_email}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+        </div><!--/.row-->
+      </div><!--/.press-inputs-->
+    </form><!--/.row-->
 
     <div id="non-field-errors" class="errors"></div>
 
     <div>
-      <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary">Submit</button>
+      <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary btn-lg">Upload</button>
     </div>
 
   </div><!--upload-form-holder-->

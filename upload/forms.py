@@ -76,22 +76,22 @@ class DataForm(forms.Form):
 
     data_file = forms.FileField(label='File')
     table_name = forms.CharField(label='Table name', max_length=100,
-                                 widget=forms.TextInput(attrs={'placeholder': 'New table name'}))
+                                 widget=forms.TextInput(attrs={'placeholder': 'Table name'}))
     source = forms.CharField(label='Source', max_length=100, required=True,
-                             widget=forms.TextInput(attrs={'placeholder': 'What organization or office provided the data?'}))
+                             widget=forms.TextInput(attrs={'placeholder': 'Source'}))
     topic = forms.CharField(label='Topic', max_length=100, required=True,
-                            widget=forms.TextInput(attrs={'placeholder': 'What is the subject of the data?'}))
+                            widget=forms.TextInput(attrs={'placeholder': 'Topic'}))
     next_update = forms.DateField(label='When to update data',
                                   widget=forms.SelectDateWidget,
                                   required=False,
                                   input_formats=['%m/%d/%Y'])
-    press_contact = forms.CharField(label='Press contact name',
+    press_contact = forms.CharField(label='Name',
                                     max_length=100,
-                                    required=False, widget=forms.TextInput(attrs={'placeholder': 'Full name of press contact'}))
+                                    required=False, widget=forms.TextInput(attrs={'placeholder': 'Press contact name'}))
     press_contact_number = forms.CharField(label='Press contact number',
-                                           max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': '123 456 7890'}))
+                                           max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': 'Phone number'}))
     press_contact_email = forms.EmailField(label='Press contact email',
-                                           required=False, widget=forms.TextInput(attrs={'placeholder': 'example@gmail.com'}))
-    press_contact_type = forms.ChoiceField(label='Press contact type',
+                                           required=False, widget=forms.TextInput(attrs={'placeholder': 'Email'}))
+    press_contact_type = forms.ChoiceField(label='Type',
                                            choices=Contact.CONTACT_TYPE_CHOICES,
                                            required=True)

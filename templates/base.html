@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.1/es6-shim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+      crossorigin="anonymous"></script>
+    <script src="{% static "js/vendor/bootstrap.min.js"%}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static "css/vendor/bootstrap.min.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "css/style.css" %}"/>
+    {% block resources %}{% endblock %}
+  </head>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/upload/">AJC Data Tool</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li data-href="search" class="nav-tab">
+            <a href="/search/">Search</a>
+          </li>
+          <li data-href="upload" class="nav-tab">
+            <a href="/upload/">Upload</a>
+          </li>
+          <li data-href="about" class="nav-tab">
+            <a href="/about/">About</a>
+          </li>
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="/logout/">Log out</a></li>
+        </ul>
+      </div><!-- /.container -->
+    </nav>
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>

@@ -46,7 +46,11 @@ button.logout {
 }
 
 .sidebar {
-  border-right: 2px solid #EFEFEF;
+  border-right: 2px solid #f8f8f8;
+}
+
+.sidebar h4 {
+  overflow: hidden;
 }
 
 .or {
@@ -59,14 +63,9 @@ button.logout {
   position: relative;
 }
 
-.db-core-inputs {
-  background-color: #EFEFEF;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
 .upload-form-holder {
-  padding-left: 40px;
+  background-color: #f8f8f8;
+  padding: 20px 40px;
 }
 
 .search-result-name {
@@ -109,7 +108,7 @@ label {
 }
 
 .table-title {
-  background-color: #EFEFEF;
+  background-color: #f8f8f8;
   padding:2px;
   text-decoration: underline;
 }
@@ -135,7 +134,7 @@ label {
 
 .search-form {
   padding: 0px 15px;
-  background-color: #EFEFEF;
+  background-color: #f8f8f8;
 }
 
 .advanced-search {
@@ -151,4 +150,8 @@ input.check {
 
 div#search-filters label {
   margin-right: 5px;
+}
+
+#file-submit {
+  margin-left: -15px;
 }
