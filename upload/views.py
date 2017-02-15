@@ -36,6 +36,8 @@ def upload_file(request):
 
     # Get a list of most recent uploads for display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
+    import pdb
+    pdb.set_trace()
 
     if request.method == 'POST':
         if form.is_valid():
@@ -89,6 +91,10 @@ def upload_file(request):
                   'upload/file-select.html',
                   {'form': form, 'uploads': uploads})
 
+@login_required
+def table_detail(request, id):
+    table = Table.objects.get(id=id)
+    return render(request, 'upload/detail.html', {'table': table})
 
 @login_required
 def categorize(request):
