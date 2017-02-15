@@ -89,6 +89,10 @@ def upload_file(request):
                   'upload/file-select.html',
                   {'form': form, 'uploads': uploads})
 
+@login_required
+def table_detail(request, id):
+    table = Table.objects.get(id=id)
+    return render(request, 'upload/detail.html', {'table': table})
 
 @login_required
 def categorize(request):
