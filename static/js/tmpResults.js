@@ -17,7 +17,7 @@ $('#file-submit').on('click', function() {
 
 function postForm(data) {
   $.ajax({
-    url: '/',
+    url: '/upload/',
     type: 'POST', 
     contentType: false,
     processData: false,
@@ -59,7 +59,7 @@ function addErrorMessages(errors) {
     else {
       // Append error messages specified for different field
       var field = $('#id_' + err);
-      errorDiv = field.siblings()[1];
+      errorDiv = field.siblings()[0];
       $(errorDiv).text(fmessages.join(', ')); // Use text instead of HTML to prevent XSS
     };
   });
