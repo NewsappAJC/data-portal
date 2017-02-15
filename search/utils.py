@@ -113,7 +113,8 @@ class SearchManager(object):
             data_type = '("{}")'.format(('","').join(filter))
 
             #SQL statement below pulls unique database-table-columns combos
-            #to feed into a search
+            #to feed into a search. The SUBSTRING_INDEX query converts
+            # "first_name" to just "name" to facilitate searching
             fquery = '''SELECT t.table, t.id,
                 CONCAT('`',GROUP_CONCAT(c.column SEPARATOR '`,`'),'`') AS search_columns
                 FROM data_import_tool.upload_table t
@@ -127,17 +128,22 @@ class SearchManager(object):
 
             results = []
             for table in tables_to_search:
-                params = {
-                    'query': query,
-                    'table': table['table'],
-                    'search_columns': table['search_columns'],
-                    'preview': 5
-                }
-                throwaway, result = self.table_search(**params)
+                # Wrap this in a try-except becase if there are zero matches
+                # trying to iterate through tables_to_search will throw an error
+                try:
+                    params = {
+                        'query': query,
+                        'table': table['table'],
+                        'search_columns': table['search_columns'],
+                        'preview': 5
+                    }
+                    throwaway, result = self.table_search(**params)
 
-                if result:
-                    result['id'] = int(table['id'])
-                    results.append(result)
+                    if result:
+                        result['id'] = int(table['id'])
+                        results.append(result)
+                except TypeError:
+                    continue
 
             return results
 

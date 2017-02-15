@@ -21,6 +21,12 @@ def search(request):
     if request.method == 'POST':
         query = request.POST.get('query', None)
         filters = request.POST.get('filter', None)
+
+        filter_names = {
+            'add': 'address',
+            'name': 'name'
+        }
+
         try:
             filters = filters.split() # If only one is selected it'll be a string
         except AttributeError:
@@ -31,8 +37,11 @@ def search(request):
 
         else:
             context['query'] = escape(query)
+            context['filter'] = filter_names[filters[0]]
+
             searchManager = SearchManager()
             res = searchManager.warehouse_search(query, filters)
+
             if not res:
                 context['error'] = '''No results found for "{}".'''.format(query)
             else:

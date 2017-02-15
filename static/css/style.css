@@ -139,6 +139,7 @@ label {
 }
 
 .advanced-search {
+  display: inline-block;
   text-decoration: underline;
   color: #337ab7;
   cursor: pointer;

@@ -43,7 +43,11 @@
 
 {% if results %}
 
-  <h3>Results for "<span class="highlight">{{query}}</span>"</h3>
+  <h3>Results for "<span class="highlight">{{query}}</span>".</h3>
+
+  <div class="small">
+    {% if filter %}Search limited to <strong>{{filter}}</strong> columns{% endif %}
+  </div>
 
   {% for result in  results%}
   <div class="row result-item">
