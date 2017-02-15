@@ -28,7 +28,7 @@
             <th>
               {{header.name}}
               <select name="{{ header.name }}">
-                <option disabled selected value> -- Select a category -- </option>
+                <option disabled selected value> -- select a category -- </option>
                 {% for cat in ajc_categories %}
                   <option value="{{ cat.0 }}">{{ cat.1 }}</option>
                 {% endfor %}

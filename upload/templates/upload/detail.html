@@ -2,10 +2,58 @@
 {% load static %}
 
 {% block content %}
-  <h1>
-  {{ table.table }}
-  </h1>
-  <em>Uploaded by {{table.user}} on {{table.upload_time}}</em> 
-  <h3>Source</h3>
-  <strong>Data provided by {{table.source}}</strong>
+<h3>About <strong>{{ table.table }} </strong>({{num_rows}} rows)</h3>
+<div class="text-uppercase">sample data</div>
+<div class="results-holder">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        {% for header in preview.headers %}
+          <th class="preview-header">{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in preview.data %}
+      <tr>
+        {% for el in row %}
+          <td>{{ el }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<em>Showing 5 rows from {{num_rows}} total rows in this dataset</em>
+
+<div class="detail-table-metadata">
+
+  <div class="meta-item">
+    <div class="text-uppercase">History</div>
+    <em>Uploaded by {{table.user}} on {{table.upload_time}}</em> 
+  </div>
+
+  <div class="meta-item">
+    <div class="text-uppercase">Source</div>
+    {% if table.source %}
+      <strong>Data provided by {{table.source}}</strong>
+    {% else %}
+      <em>Edit this dataset to add a description</em>
+    {% endif %}
+  </div>
+
+  <div class="meta-item">
+    <div class="text-uppercase">Categories</div>
+    <em>Edit this dataset to add a category</em>
+  </div>
+
+  <div class="edit">
+    <a href="/upload/">
+      <span class="glyphicon glyphicon-edit"></span>
+      Edit
+    </a>
+  </div>
+
+</div>
+
 {% endblock %}

@@ -27,7 +27,7 @@ class SearchManager(object):
             the query
         """
         connection = self.connect_to_db()
-        search_result = connection.execute(sql_query).fetchall()
+        search_result = connection.execute(sql_query)
         connection.close
 
         return search_result

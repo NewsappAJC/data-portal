@@ -173,3 +173,13 @@ div#search-filters label {
 .search-metadata {
   margin-bottom: -15px;
 }
+
+.detail-table-metadata {
+  margin-top: 30px;
+  padding: 10px;
+  background-color: #f8f8f8;
+}
+
+.meta-item {
+  margin-bottom: 10px;
+}

@@ -18,6 +18,7 @@ from redis.exceptions import ConnectionError
 from .forms import DataForm
 from .models import Column, Table, Contact
 from .utils import S3Manager, TableFormatter, Index
+from search.utils import SearchManager
 # Have to do an absolute import below because of how celery resolves paths :(
 from upload.tasks import load_infile
 
@@ -91,8 +92,23 @@ def upload_file(request):
 
 @login_required
 def table_detail(request, id):
-    table = Table.objects.get(id=id)
-    return render(request, 'upload/detail.html', {'table': table})
+    context = {}
+    table = Table.objects.get(pk=id)
+    context['table'] = table
+
+    # Get column names and sample data to generate a table
+    searchManager = SearchManager()
+    select_query = 'SELECT * FROM imports.{} LIMIT 5;'.format(table.table)
+    data = searchManager.simple_query(select_query)
+    keys = data.keys()
+    sample_rows = data.fetchall()
+    context['preview'] = {'headers': keys, 'data': sample_rows}
+
+    # Get the number of rows in the table
+    n = searchManager.simple_query('SELECT COUNT(*) FROM imports.{}'.format(table.table))
+    context['num_rows'] = n.first()[0]
+
+    return render(request, 'upload/detail.html', context)
 
 @login_required
 def categorize(request):
