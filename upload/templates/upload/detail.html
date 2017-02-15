@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
-<h3>About <strong>{{ table.table }} </strong>({{num_rows}} rows)</h3>
+<h3>About <strong>{{ table.table }} </strong>({{num_rows|intcomma}} rows)</h3>
 <div class="text-uppercase">sample data</div>
 <div class="results-holder">
   <table class="table table-striped">
