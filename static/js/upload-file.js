@@ -4,8 +4,27 @@ window.onload = function() {
   addUploadHandler(ajaxPost);
 }
 
-function next(data) {
-  window.location.href = '/upload/categorize';
+function showCategorize(data) {
+  $('#metadata-form').hide();
+  $('#categorize').show();
+  var options = data.ajc_categories.map(function(cat) {
+    return `<option value="${cat[0]}">${cat[1]}</option>`;
+  })
+  var headers = data.headers.map(function(header) {
+    return (`
+      <tr>
+        <td><strong>${header}</strong></td>
+        <td>
+          <select name="${header}">
+            <option disabled selected value> -- select a category -- </option>
+            ${options.join('\n')}
+          </select>
+        </td>
+      </tr>`
+    );
+  });
+  $('#headers-cat-select').append(headers.join('\n'));
+  $('#modal-footer').hide();
 }
 
 function showModal(data) {
@@ -24,7 +43,7 @@ function showModal(data) {
       e.preventDefault();
       e.stopPropagation();
       var data = new FormData($('#metadata-form')[0]);
-      ajaxPost('/upload/add-metadata/', data, next)
+      ajaxPost('/upload/add-metadata/', data, showCategorize);
     })
   });
   $('#headerModal').modal();

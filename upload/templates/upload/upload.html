@@ -154,7 +154,8 @@
             </p>
             <form action="/upload/write-to-db/" method="post" enctype="multipart/form-data">
               {% csrf_token %}
-              <table id="headers-cat-select" class="table">
+              <table class="table">
+                <tbody id="headers-cat-select"></tbody>
               </table>
               <button type="submit" class="btn btn-success">Begin Upload</button>
             </form>
