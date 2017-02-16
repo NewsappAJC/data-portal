@@ -50,14 +50,14 @@ class FileForm(forms.Form):
     data_file = forms.FileField(label='File')
 
 
-class MetaDataForm(forms.Form):
+class MetadataForm(forms.Form):
     """
     Handles validation of metadata about a table
     """
     # Initialize the data upload form with a list of databases on the MySQL
     # server
     def __init__(self, *args, **kwargs):
-        super(MetaDataForm, self).__init__(*args, **kwargs)
+        super(MetadataForm, self).__init__(*args, **kwargs)
 
         # Set Bootstrap classes on form inputs
         for field in self.fields:

@@ -1,6 +1,5 @@
 # Standard library imports
 import os
-import csv
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -16,7 +15,7 @@ from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
 
 # Local imports
-from .forms import MetaDataForm, FileForm
+from .forms import MetadataForm, FileForm
 from .models import Column, Table, Contact
 from .utils import S3Manager, TableFormatter, Index
 from search.utils import SearchManager
@@ -31,36 +30,29 @@ URL = os.environ.get('DATA_WAREHOUSE_URL')
 def upload(request):
     # Get a list of most recent uploads for display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
-    context = {'form': FileForm(), 'uploads': uploads}
+    context = {'meta_form': MetadataForm(), 'file_form': FileForm(), 'uploads': uploads}
 
     return render(request, 'upload/upload.html', context)
 
 @login_required
 def upload_file(request):
-    form = FileForm(request.FILES)
-    import pdb
-    pdb.set_trace()
+    form = FileForm(None, request.FILES)
     if request.method == 'POST':
-        import pdb
-        pdb.set_trace()
         if form.is_valid():
-            input_file = request.files['data_file']
+            input_file = request.FILES['data_file']
             local_path = '/tmp/ajcMa-data-upload.csv'
             with open(local_path, 'wb+') as f:
                 # Use chunks so as not to overflow system memory
                 for i, chunk in enumerate(input_file.chunks()):
                     if (i == 0):
-                        import pdb
-                        pdb.set_trace()
-                    # f.write(chunk)
+                        # TODO: should also handle splitting on \r\n like Windows
+                        first_row = chunk.split('\n')[0]
+                    f.write(chunk)
 
             request.session['local_path']= local_path
-            with open(local_path, 'r') as f:
-                reader = csv.reader(f)
-                first_row = reader.next()
 
             return JsonResponse(
-                {'headers': first_row},
+                {'headers': first_row.split(',')},
                 status=200
             )
 
@@ -82,18 +74,16 @@ def add_metadata(request):
     access it later when we upload to the Django DB
     """
     # Get form data, assign default values in case it's missing information.
-    form = MetaDataForm(request.POST or None, request.FILES or None)
+    form = MetadataForm(request.POST)
 
     if request.method == 'POST':
         if form.is_valid():
-            inputf = request.FILES['data_file']
+            # Write the table to a temporary file in S3 that we can retrieve
+            # later
             table_name = form.cleaned_data['table_name']
-            # Write the file to a path in the /tmp directory for upload to S3
-            path = '/tmp/{}.csv'.format(table_name)
-            with open(path, 'wb+') as f:
-                # Use chunks so as not to overflow system memory
-                for chunk in inputf.chunks():
-                    f.write(chunk)
+            local_path = request.session.get('local_path')
+            s3 = S3Manager(local_path, table_name, BUCKET_NAME)
+            request.session['s3_path'] = s3.write_file()
 
             request.session['table_params'] = {
                 'topic': form.cleaned_data['topic'],
@@ -103,11 +93,11 @@ def add_metadata(request):
                 'press_contact_number': form.cleaned_data['press_contact_number'],
                 'press_contact_email': form.cleaned_data['press_contact_email'],
                 'press_contact_type': form.cleaned_data['press_contact_type'],
-                'table_name': table_name,
+                'table_name': table_name
             }
 
             # Sanitize the column headers
-            formatter = TableFormatter(path)
+            formatter = TableFormatter(local_path)
             request.session['headers'] = formatter.get_column_names()
 
             # Return an empty HTTP Response to the AJAX request to let it know
@@ -125,7 +115,7 @@ def add_metadata(request):
     # If request method isn't POST then render the homepage
     return render(request,
                   'upload/file-select.html',
-                  {'form': form, 'uploads': uploads})
+                  {'form': form})
 
 @login_required
 def table_detail(request, id):

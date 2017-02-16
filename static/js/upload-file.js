@@ -1,11 +1,33 @@
+/* global $ */
+
 window.onload = function() {
   addUploadHandler(ajaxPost);
 }
 
-/* global $ */
-function setHeadersAndSend(headers) {
-  formData.headers = headers;
-  return;
+function next(data) {
+  window.location.href = '/upload/categorize';
+}
+
+function showModal(data) {
+  data.headers.forEach(function(h) {
+    $('#header-input-holder').append('<li>' + h + '</li>');
+  });
+  // Add event handler to the continue button in the modal
+  $('#continue-btn').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('#metadata-form').show();
+    $('#header-prompt').hide();
+
+    // Change the event handler on the button
+    $(this).on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var data = new FormData($('#metadata-form')[0]);
+      ajaxPost('/upload/add-metadata/', data, next)
+    })
+  });
+  $('#headerModal').modal();
 }
 
 
@@ -16,7 +38,7 @@ function addUploadHandler(callback) {
     e.stopPropagation();
     // Get the data from the form and send it as an AJAX post request
     var data = new FormData($('#upload-form')[0]);
-    callback('/upload-file/', data.data_file, setHeaders);
+    callback('/upload/upload-file/', data, showModal);
 
     // Defined as a global so that we can enable/disable from within multiple
     // functions

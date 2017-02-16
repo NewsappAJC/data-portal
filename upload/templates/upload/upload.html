@@ -30,7 +30,7 @@
         <div class="row">
           <div class="col-sm-8">
             <div class="form-group">
-              {{form.data_file}}
+              {{file_form.data_file}}
               <div class="errors"></div>
             </div>
           </div>
@@ -44,6 +44,123 @@
         Upload
       </button>
     </div>
+
+    <!--Header check modal -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="headerModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Add metadata about your upload</h4>
+          </div>
+          <div class="modal-body">
+            <div id="header-prompt">
+              <h3>Headers</h3>
+              <p>Are these the correct column titles for this dataset?</p>
+              <ul id="header-input-holder"></ul>
+              <div class="alert alert-warning">
+                <p>
+                  <span class="glyphicon glyphicon-alert"></span> 
+                  If your dataset doesn't have column titles, or the titles above are 
+                  incorrect, please cancel the upload and add column titles
+                  in Microsoft Excel or your favorite text editor.
+                </p>
+              </div>
+            </div>
+
+          <form id="metadata-form" class="form" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" value="" name="headers"/>
+            <p>Enter some extra information about the table you're uploading.
+              This information will help other reporters access this data</p>
+
+            <h3>
+              <span class="glyphicon glyphicon-list-alt"></span> 
+              <strong> Table</strong> Details
+            </h3>
+
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.table_name}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div><!--/.row-->
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.topic}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.source}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  <input class="form-control" placeholder='When to update next'/>
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+
+            <h3>
+              <span class="glyphicon glyphicon-phone"></span> 
+              <strong> Contact</strong> Details
+            </h3>
+
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.press_contact_type}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.press_contact}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.press_contact_number}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  {{meta_form.press_contact_email}}
+                  <div class="errors"></div>
+                </div>
+              </div>
+            </div><!--/.row-->
+          </form>
+        </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="continue-btn">Continue</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
 
   </div><!--upload-form-holder-->
 
