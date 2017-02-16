@@ -28,6 +28,12 @@ class FileForm(forms.Form):
     """
     Handles validation of the file to be uploaded
     """
+    def __init__(self, *args, **kwargs):
+        super(FileForm, self).__init__(*args, **kwargs)
+
+        # Set Bootstrap classes on form inputs
+        self.fields['data_file'].widget.attrs.update({'class': 'form-control'})
+
     # Ensure that the file isn't >20MB.
     def clean_data_file(self):
         data = self.cleaned_data['data_file']

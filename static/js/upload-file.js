@@ -1,3 +1,7 @@
+window.onload = function() {
+  addUploadHandler(ajaxPost);
+}
+
 /* global $ */
 function setHeadersAndSend(headers) {
   formData.headers = headers;
@@ -7,10 +11,12 @@ function setHeadersAndSend(headers) {
 
 // Event handler for submit button
 function addUploadHandler(callback) {
-  $('#file-submit').on('click', function() {
+  $('#file-submit').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     // Get the data from the form and send it as an AJAX post request
     var data = new FormData($('#upload-form')[0]);
-    callback('/upload_file/', data.data_file, setHeaders);
+    callback('/upload-file/', data.data_file, setHeaders);
 
     // Defined as a global so that we can enable/disable from within multiple
     // functions
@@ -41,9 +47,6 @@ function ajaxPost(url, data, callback) {
     }
   });
 };
-
-addUploadHandler(ajaxPost);
-
 
 function addErrorMessages(errors) {
   // Clear existing errors

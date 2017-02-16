@@ -28,12 +28,24 @@ BUCKET_NAME = os.environ.get('S3_BUCKET')
 URL = os.environ.get('DATA_WAREHOUSE_URL')
 
 @login_required
+def upload(request):
+    # Get a list of most recent uploads for display in the sidebar
+    uploads = Table.objects.order_by('-upload_time')[:5]
+    context = {'form': FileForm(), 'uploads': uploads}
+
+    return render(request, 'upload/upload.html', context)
+
+@login_required
 def upload_file(request):
     form = FileForm(request.FILES)
+    import pdb
+    pdb.set_trace()
     if request.method == 'POST':
+        import pdb
+        pdb.set_trace()
         if form.is_valid():
             input_file = request.files['data_file']
-            local_path = '/tmp/ajc-data-upload.csv'
+            local_path = '/tmp/ajcMa-data-upload.csv'
             with open(local_path, 'wb+') as f:
                 # Use chunks so as not to overflow system memory
                 for i, chunk in enumerate(input_file.chunks()):
@@ -66,14 +78,11 @@ def upload_file(request):
 @login_required
 def add_metadata(request):
     """
-    Take file uploaded by user, use csvkit to generate a DB schema, and write
-    to an SQL table. Write metadata to Django DB, and copy original file to s3.
+    Write metadata about a file upload to session storage so that we can
+    access it later when we upload to the Django DB
     """
     # Get form data, assign default values in case it's missing information.
     form = MetaDataForm(request.POST or None, request.FILES or None)
-
-    # Get a list of most recent uploads for display in the sidebar
-    uploads = Table.objects.order_by('-upload_time')[:5]
 
     if request.method == 'POST':
         if form.is_valid():
