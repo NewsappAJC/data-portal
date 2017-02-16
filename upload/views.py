@@ -3,7 +3,7 @@ import os
 
 # Django imports
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -98,12 +98,14 @@ def add_metadata(request):
 
             # Sanitize the column headers
             formatter = TableFormatter(local_path)
-            request.session['headers'] = formatter.get_column_names()
+            headers, sample_data = formatter.get_column_data()
+            request.session['headers'] = headers
 
-            # Return an empty HTTP Response to the AJAX request to let it know
-            # the request was successful. When the page receives a success
-            # header it will automatically redirect to the next page
-            return HttpResponse(status=200)
+            data = {'headers': headers,
+                    'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+                    'sample_data': sample_data}
+
+            return JsonResponse(data, status=200)
 
         else:
             return JsonResponse(
@@ -114,28 +116,8 @@ def add_metadata(request):
 
     # If request method isn't POST then render the homepage
     return render(request,
-                  'upload/file-select.html',
+                  'upload/upload.html',
                   {'form': form})
-
-@login_required
-def table_detail(request, id):
-    context = {}
-    table = Table.objects.get(pk=id)
-    context['table'] = table
-
-    # Get column names and sample data to generate a table
-    searchManager = SearchManager()
-    select_query = 'SELECT * FROM imports.{} LIMIT 5;'.format(table.table)
-    data = searchManager.simple_query(select_query)
-    keys = data.keys()
-    sample_rows = data.fetchall()
-    context['preview'] = {'headers': keys, 'data': sample_rows}
-
-    # Get the number of rows in the table
-    n = searchManager.simple_query('SELECT COUNT(*) FROM imports.{}'.format(table.table))
-    context['num_rows'] = n.first()[0]
-
-    return render(request, 'upload/detail.html', context)
 
 @login_required
 def categorize(request):
@@ -159,22 +141,16 @@ def write_to_db(request):
     DATA INFILE statement to push it to the MySQL server
     """
     if request.method == 'POST':
+        data = request.POST
         # We don't want to create a column for the csrf token so strip it out
-        keys = [x for x in request.POST if x != 'csrfmiddlewaretoken']
-        # Have to validate manually because we can't use a Django form class
-        # for a dynamically generated form. We force the user to select a
-        # category for every header, so if any of the headers don't have a 
-        # category selected, display an error message
-        headers = request.session['headers']
-
-        if len(keys) < len(headers):
-            messages.add_message(request, messages.ERROR,
-                                 'Please select a category for every column')
-            return redirect(reverse('upload:categorize'))
+        # if len(keys) < len(headers):
+        #     messages.add_message(request, messages.ERROR,
+        #                          'Please select a category for every column')
+        #     return redirect(reverse('upload:categorize'))
 
 
         table_params = request.session['table_params']
-        table_params['columns'] = headers
+        table_params['columns'] = [{'name': k} for k in data.keys() if k != 'csrfmiddlewaretoken']
         table_params['s3_path'] = request.session['s3_path']
 
         # Launch an asynchronous task for the potentially time-intensive job
@@ -191,20 +167,15 @@ def write_to_db(request):
         # check_task_status view
         request.session['task_id'] = task.id
 
-        # Get the index of each column header and set the appropriate category
-        # Because the form data is POSTed as a dict we can't be sure about
-        # the order
-        for key in keys:
-            for i, val in enumerate(headers):
-                if val['name'] == key:
-                    header_index = i
-                    break
+        # Set the appropriate category for each column
+        headers = []
+        for key in data.keys():
+            if key != 'csrfmiddlewaretoken':
+                headers.append({'name': key, 'category': data[key]})
 
-            val = request.POST[key]
-            request.session['headers'][header_index]['category'] = val
-
+        request.session['headers'] = headers
         context = {'table': request.session['table_params']['table_name']}
-        return render(request, 'upload/upload.html', context)
+        return render(request, 'upload/write-to-db.html', context)
 
     return redirect(reverse('upload:index'))
 
@@ -285,6 +256,27 @@ def check_task_status(request):
     except TypeError:
         data['result'] = str(data['result'])
         return JsonResponse(data)
+
+@login_required
+def table_detail(request, id):
+    context = {}
+    table = Table.objects.get(pk=id)
+    context['table'] = table
+
+    # Get column names and sample data to generate a table
+    searchManager = SearchManager()
+    select_query = 'SELECT * FROM imports.{} LIMIT 5;'.format(table.table)
+    data = searchManager.simple_query(select_query)
+    keys = data.keys()
+    sample_rows = data.fetchall()
+    context['preview'] = {'headers': keys, 'data': sample_rows}
+
+    # Get the number of rows in the table
+    n = searchManager.simple_query('SELECT COUNT(*) FROM imports.{}'.format(table.table))
+    context['num_rows'] = n.first()[0]
+
+    return render(request, 'upload/detail.html', context)
+
 
 def logout_user(request):
     """

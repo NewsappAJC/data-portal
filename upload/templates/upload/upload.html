@@ -25,7 +25,7 @@
       {% csrf_token %}
       <div class="row">
         <h3>
-          <span class="glyphicon glyphicon-folder-open"></span> <strong>Select</strong> a CSV
+          <span class="glyphicon glyphicon-folder-open"></span><strong> Upload</strong> a CSV
         </h3>
         <div class="row">
           <div class="col-sm-8">
@@ -144,11 +144,23 @@
                   <div class="errors"></div>
                 </div>
               </div>
-            </div><!--/.row-->
-          </form>
-        </div>
+            </div><!-- /.row -->
+          </form><!-- /.metadata-form -->
 
-          <div class="modal-footer">
+          <div id="categorize" style="display:none;">
+            <p>
+              Please select a datatype for each column in the table. This will
+              make searching the database faster and easier.
+            </p>
+            <form action="/upload/write-to-db/" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <table id="headers-cat-select" class="table">
+              </table>
+              <button type="submit" class="btn btn-success">Begin Upload</button>
+            </form>
+          </div>
+
+          <div class="modal-footer" id="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" id="continue-btn">Continue</button>
           </div>

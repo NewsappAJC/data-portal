@@ -2,6 +2,7 @@
 import os
 from datetime import date
 import re
+import csv
 
 # Django imports
 from django.conf import settings
@@ -156,6 +157,9 @@ class TableFormatter(object):
         preexisting = []  # Will keep track of duplicate column names
         clean_names = []  # Will hold sanitized column names
         for name in names:
+            # Add default name to empty column titles
+            if not name:
+                name = 'Unnamed'
             # Append a number to a column name if it already exists in the table
             preexisting.append(name)
 
@@ -177,51 +181,28 @@ class TableFormatter(object):
 
         return clean_names
 
-    def get_column_names(self):
+    def get_column_data(self):
         """
         Get column names and sample data from a CSV without loading the whole
         file into memory
 
         Returns:
-            headers (string[string[]]): A list of sanitized column headers with
-            a nested list of sample data
+            A two-tuple containing (1) A list of sanitized column headers with
+            a nested list of sample data and (2) A list of sample rows
         """
-        columns = []
-        rows = []
         with open(self.filepath, 'r') as f:
-            # Loop through lines to avoid reading the entire file into memory
-            for i, line in enumerate(f):
-                # Split lines on commas. TODO handle other delimiters
-                linef = line.split(',')
-                # Generate our list of headers from the first row
-                if i == 0:
-                    columns = linef
-                # Only get sample data from the first 3 rows
-                elif i < 4:
-                    rows.append(linef)
-                # After 4 lines, stop reading the CSV
-                else:
+            reader = csv.reader(f)
+            raw_headers = f.next().split(',')
+            sample_data = []
+            for i in range(5):
+                try:
+                    sample_data.append(reader.next())
+                except StopIteration:
                     break
 
         # Clean the column names to prevent SQL injection
-        ccolumns = self._clean(columns)
-        headers = []
-        i = 0
-        for col in ccolumns:
-            # Provide default names for unnamed columns
-            name = col or str(i)
-            if not col:
-                i += 1
-                name = 'col{}'.format(str(i))
-            else:
-                name = col
-            headers.append({'name': name, 'sample_data': []})
-
-        # Append the sample data to the header objects
-        for i in range(len(headers)):
-            headers[i]['sample_data'] = [str(x[i]) for x in rows]
-
-        return headers
+        clean_headers = self._clean(raw_headers)
+        return (clean_headers, sample_data)
 
 
 class Index(object):

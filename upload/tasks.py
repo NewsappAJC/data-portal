@@ -78,7 +78,6 @@ class Loader(object):
             csv_table = table.Table.from_csv(f, delimiter=',')
 
         sql_table = sql.make_table(csv_table)
-
         for i, column in enumerate(sql_table.columns):
             # Clean the type and name values
             raw_type = str(column.type)
