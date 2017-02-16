@@ -1,34 +1,39 @@
-// Globals
-var csrf,
-    $btn;
+/* global $ */
+function setHeadersAndSend(headers) {
+  formData.headers = headers;
+  return;
+}
+
 
 // Event handler for submit button
-$('#file-submit').on('click', function() {
-  // Get the date from the form and send it as an AJAX post request
-  var data = new FormData($('#upload-form')[0]);
-  csrf = data.get('csrfmiddlewaretoken');
-  postForm(data);
+function addUploadHandler(callback) {
+  $('#file-submit').on('click', function() {
+    // Get the data from the form and send it as an AJAX post request
+    var data = new FormData($('#upload-form')[0]);
+    callback('/upload_file/', data.data_file, setHeaders);
 
-  // Defined as a global so that we can enable/disable from within multiple
-  // functions
-  $btn = $(this).button('loading');
-});
+    // Defined as a global so that we can enable/disable from within multiple
+    // functions
+    $btn = $(this).button('loading');
+  });
+  return;
+}
 
 
-function postForm(data) {
+function ajaxPost(url, data, callback) {
   $.ajax({
-    url: '/upload/',
+    url: url,
     type: 'POST', 
     contentType: false,
     processData: false,
     cache: false,
     // We have to add a CSRF token as a header or Django will complain
-    headers: {'X-CSRFToken': csrf},
+    headers: {'X-CSRFToken': data.get('csrfmiddlewaretoken')},
     data: data,
     success: function(res) {
       // Redirect to the categorize page if form validates and upload to S3
       // succeeds
-      window.location.href = './categorize/';
+      callback(res);
     },
     error: function(res) {
       addErrorMessages(JSON.parse(res.responseJSON));
@@ -36,6 +41,8 @@ function postForm(data) {
     }
   });
 };
+
+addUploadHandler(ajaxPost);
 
 
 function addErrorMessages(errors) {

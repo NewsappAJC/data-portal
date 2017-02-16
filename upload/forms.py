@@ -24,12 +24,34 @@ DELIMITERS = (
 # 10MB = 10485760
 MAX_UPLOAD_SIZE = 10485760 * 2
 
+class FileForm(forms.Form):
+    """
+    Handles validation of the file to be uploaded
+    """
+    # Ensure that the file isn't >20MB.
+    def clean_data_file(self):
+        data = self.cleaned_data['data_file']
+        if data._size > MAX_UPLOAD_SIZE:
+            raise forms.ValidationError(
+                'Sorry, we can\'t handle files bigger than 10MB.'
+            )
+        if not data.name.endswith('.csv'):
+            raise forms.ValidationError(
+                'Please select a .csv file'
+            )
+        return data
 
-class DataForm(forms.Form):
+    data_file = forms.FileField(label='File')
+
+
+class MetaDataForm(forms.Form):
+    """
+    Handles validation of metadata about a table
+    """
     # Initialize the data upload form with a list of databases on the MySQL
     # server
     def __init__(self, *args, **kwargs):
-        super(DataForm, self).__init__(*args, **kwargs)
+        super(MetaDataForm, self).__init__(*args, **kwargs)
 
         # Set Bootstrap classes on form inputs
         for field in self.fields:
@@ -42,19 +64,6 @@ class DataForm(forms.Form):
         if r.search(data) is not None:
             raise forms.ValidationError(
                 'Only alphanumeric characters and underscores (_) are allowed.'
-            )
-        return data
-
-    # Ensure that the file isn't >20MB.
-    def clean_data_file(self):
-        data = self.cleaned_data['data_file']
-        if data._size > MAX_UPLOAD_SIZE:
-            raise forms.ValidationError(
-                'Sorry, we can\'t handle files bigger than 10MB yet.'
-            )
-        if not data.name.endswith('.csv'):
-            raise forms.ValidationError(
-                'Please select a .csv file'
             )
         return data
 
@@ -74,7 +83,6 @@ class DataForm(forms.Form):
         data = self._sanitize(self.cleaned_data['table_name'])
         return data
 
-    data_file = forms.FileField(label='File')
     table_name = forms.CharField(label='Table name', max_length=100,
                                  widget=forms.TextInput(attrs={'placeholder': 'Table name'}))
     source = forms.CharField(label='Source', max_length=100, required=True,

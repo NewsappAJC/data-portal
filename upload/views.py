@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+import csv
 
 # Django imports
 from django.shortcuts import render, redirect
@@ -15,7 +16,7 @@ from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
 
 # Local imports
-from .forms import DataForm
+from .forms import MetaDataForm, FileForm
 from .models import Column, Table, Contact
 from .utils import S3Manager, TableFormatter, Index
 from search.utils import SearchManager
@@ -28,12 +29,48 @@ URL = os.environ.get('DATA_WAREHOUSE_URL')
 
 @login_required
 def upload_file(request):
+    form = FileForm(request.FILES)
+    if request.method == 'POST':
+        if form.is_valid():
+            input_file = request.files['data_file']
+            local_path = '/tmp/ajc-data-upload.csv'
+            with open(local_path, 'wb+') as f:
+                # Use chunks so as not to overflow system memory
+                for i, chunk in enumerate(input_file.chunks()):
+                    if (i == 0):
+                        import pdb
+                        pdb.set_trace()
+                    # f.write(chunk)
+
+            request.session['local_path']= local_path
+            with open(local_path, 'r') as f:
+                reader = csv.reader(f)
+                first_row = reader.next()
+
+            return JsonResponse(
+                {'headers': first_row},
+                status=200
+            )
+
+        else:
+            # Setting safe to False is necessary to allow non-dict objects to
+            # be serialized. To prevent XSS attacks make sure to escape the
+            # text on the client side (the app does this). See django docs for
+            # details about serializing non-dict objects
+            return JsonResponse(
+                form.errors.as_json(escape_html=True),
+                status=400,
+                safe=False
+            )
+
+@login_required
+def add_metadata(request):
     """
     Take file uploaded by user, use csvkit to generate a DB schema, and write
-    to an SQL table. Copy original file and metadata to s3.
+    to an SQL table. Write metadata to Django DB, and copy original file to s3.
     """
     # Get form data, assign default values in case it's missing information.
-    form = DataForm(request.POST or None, request.FILES or None)
+    form = MetaDataForm(request.POST or None, request.FILES or None)
 
     # Get a list of most recent uploads for display in the sidebar
     uploads = Table.objects.order_by('-upload_time')[:5]
@@ -60,11 +97,6 @@ def upload_file(request):
                 'table_name': table_name,
             }
 
-            # Write the CSV to a temporary file in the Amazon S3 bucket that
-            # we will retrieve later
-            s3 = S3Manager(path, table_name, BUCKET_NAME)
-            request.session['s3_path'] = s3.write_file()
-
             # Sanitize the column headers
             formatter = TableFormatter(path)
             request.session['headers'] = formatter.get_column_names()
@@ -75,10 +107,6 @@ def upload_file(request):
             return HttpResponse(status=200)
 
         else:
-            # Setting safe to False is necessary to allow non-dict objects to
-            # be serialized. To prevent XSS attacks make sure to escape the
-            # text on the client side (the app does this). See django docs for
-            # details about serializing non-dict objects
             return JsonResponse(
                 form.errors.as_json(escape_html=True),
                 status=400,
@@ -258,27 +286,6 @@ def check_task_status(request):
     except TypeError:
         data['result'] = str(data['result'])
         return JsonResponse(data)
-
-def get_detail(request, id):
-    """
-    Get detailed information about a table uploaded to the MySQL database
-    """
-    table = Table.objects.get(id=id)
-
-    # Create a connection to the DB TODO Break this out into a utils function
-    engine = sqlalchemy.create_engine(URL)
-    connection = engine.connect()
-
-    select_query = 'SELECT * FROM imports.{table}'.format(table)
-    data = connection.execute(select_query)
-
-    # TODO break this out into a separate function so the code isn't duplicated
-    dataf = []
-    dataf.append([x for x in data.keys()])
-
-    context = {'table': table, 'headers': dataf[0], 'rows': dataf[1:]}
-    return render(request, 'upload/detail.html', context)
-
 
 def logout_user(request):
     """

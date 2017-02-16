@@ -2,20 +2,150 @@
 {% load static %}
 
 {% block resources %}
-    <script src="{% static "js/results.js"%}"></script>
+  <script type="text/javascript" src="{% static "js/file-select.js"%}"></script>
 {% endblock %}
 
 {% block content %}
-  <a href="/logout/"><button class="btn btn-default logout">Log out</button></a>
-  <h3 class="progress-holder">Upload progress for {{table}} <span id="current-state">
-      <span class="label label-info">PENDING</span>
-    </span>
-  </h3><span id="progress-message"></span>
-    <div class="progress">
-      <div id="progress-bar" class="progress-bar progress-bar-info progress-bar-striped active" style="min-width: 2em" role='progressbar'></div>
-    </div>
-  <div id="details"></div>
-  <div id="message"></div>
-  <div id="warnings"></div>
-{% endblock %}
+<div class="row">
 
+  <div class="col-sm-3 sidebar">
+    <h3>Recent uploads</h3>
+    <div>
+      {% for upload in uploads %}
+        <div class="table-teaser">
+          <h4 class="list-table-title">
+            <a href="./tables/{{upload.id}}">{{upload.table}}</a>
+          </h4>
+          <div class="timestamp">{{upload.upload_time}}</div>
+          <div class="topic">Topic: {{upload.topic}}</div>
+          <div><em>Uploaded by {{upload.user}}</em></div>
+        </div>
+      {% endfor %}
+    </div>
+  </div><!--sidebar-->
+
+  <div class="upload-form-holder col-sm-9">
+    <form enctype="multipart/form-data" class="form" id="upload-form" action="/upload/" method="post">
+    <input type="hidden" name="tempfile" id="tempfile"/>
+      {% csrf_token %}
+      <div class="row">
+        <div class="db-core-inputs">
+          <h3>
+            <span class="glyphicon glyphicon-folder-open"></span> 
+            <strong> Select</strong> a CSV
+          </h3>
+          <div class="row">
+            <div class="col-sm-8">
+              <div class="form-group">
+                {{form.data_file}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div><!--/.row-->
+          <div style="clear:both;"></div>
+        </div><!--db-core-inputs-->
+      </div>
+
+      <div class="row">
+        <h3>
+          <span class="glyphicon glyphicon-list-alt"></span> 
+          <strong> Table</strong> Details
+        </h3>
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              {{form.table_name}}
+              <div class="errors"></div>
+            </div>
+          </div>
+        </div><!--/.row-->
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              {{form.topic}}
+              <div class="errors"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              {{form.source}}
+              <div class="errors"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              <input class="form-control" placeholder='When to update next'/>
+              <div class="errors"></div>
+            </div>
+          </div>
+        </div>
+      </div><!--/.row-->
+
+      <div class="row">
+        <div class="press-inputs">
+          <h3>
+            <span class="glyphicon glyphicon-phone"></span> 
+            <strong> Contact</strong> Details
+          </h3>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_type}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_number}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                {{form.press_contact_email}}
+                <div class="errors"></div>
+              </div>
+            </div>
+          </div>
+        </div><!--/.row-->
+      </div><!--/.press-inputs-->
+    </form><!--/.row-->
+
+    <div id="non-field-errors" class="errors"></div>
+
+    <div>
+      <button id="file-submit" data-loading-text="Uploading..." class="btn btn-primary btn-lg">
+        <span class="glyphicon glyphicon-circle-arrow-up"></span>
+        Upload
+      </button>
+    </div>
+
+  </div><!--upload-form-holder-->
+
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+      <p>{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <script src="{% static "js/tmpResults.js"%}"></script>
+
+{% endblock %}
