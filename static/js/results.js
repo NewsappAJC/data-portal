@@ -40,7 +40,7 @@ function checkResponseStatus(res) {
               ${res.result.errorMessage}
             </p>
             <p>
-              <a href="/" class="alert-link">Go back to the upload page</a>
+              <a href="/upload/" class="alert-link">Go back to the upload page</a>
             </p>
           </div>
         `)
@@ -57,7 +57,7 @@ function checkResponseStatus(res) {
             Table <strong>${res.result.table}</strong> 
             was loaded into the <strong>imports</strong> database.</p>
           <p>
-            <a href="/" class="alert-link">Go back to the upload page</a>
+            <a href="/upload/" class="alert-link">Go back to the upload page</a>
           </p>
         </div>
       `)
@@ -78,7 +78,7 @@ function checkResponseStatus(res) {
             <p>
             <span class="glyphicon glyphicon-alert"></span>
             The upload succeeded, but there were <a href="#warnings" class="alert-link">warnings</a>.</p>
-            <p><a href="/" class="alert-link">Go back to the upload page</a></p>
+            <p><a href="/upload/" class="alert-link">Go back to the upload page</a></p>
           </div>
         `)
       }
