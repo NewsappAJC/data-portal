@@ -183,3 +183,8 @@ div#search-filters label {
 .meta-item {
   margin-bottom: 10px;
 }
+
+#headers-cat-select li {
+  padding-bottom: 10px;
+}
+

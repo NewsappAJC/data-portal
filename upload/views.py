@@ -10,14 +10,14 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 
 # Third-party imports
-import sqlalchemy
+# import sqlalchemy
 from celery.result import AsyncResult
 from redis.exceptions import ConnectionError
 
 # Local imports
 from .forms import MetadataForm, FileForm
 from .models import Column, Table, Contact
-from .utils import S3Manager, TableFormatter, Index
+from .utils import S3Manager, TableFormatter
 from search.utils import SearchManager
 # Have to do an absolute import below because of how celery resolves paths :(
 from upload.tasks import load_infile
@@ -230,9 +230,9 @@ def check_task_status(request):
         )
         c.save()
 
-        engine = sqlalchemy.create_engine(URL)
-        connection = engine.connect()
-        index = Index(table_id=t.id, connection=connection)
+        # engine = sqlalchemy.create_engine(URL)
+        # connection = engine.connect()
+        # index = Index(table_id=t.id, connection=connection)
 
         # Create column objects for each column in the table, and create an
         # index for the ones we're interested in
@@ -245,8 +245,8 @@ def check_task_status(request):
                        column_size=task_header['length'])
             c.save()
             # Need to fix this so that it's stored as None
-            if c.information_type != 'None':
-                index.create_index(c.information_type)
+            # if c.information_type != 'None':
+            #     index.create_index(c.information_type)
 
 
     # If response isn't JSON serializable then it's an error message.
