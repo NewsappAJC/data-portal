@@ -37,10 +37,10 @@ function checkResponseStatus(res) {
               <span class="glyphicon glyphicon-remove"></span>
               There was an error uploading to the database: </p>
             <p>
-              ${res.result.errorMessage}
+              ${res.result.error.errorMessage}
             </p>
             <p>
-              <a href="/upload/" class="alert-link">Go back to the upload page</a>
+              <a href="/" class="alert-link">Go back to the upload page</a>
             </p>
           </div>
         `)
@@ -57,7 +57,7 @@ function checkResponseStatus(res) {
             Table <strong>${res.result.table}</strong> 
             was loaded into the <strong>imports</strong> database.</p>
           <p>
-            <a href="/upload/" class="alert-link">Go back to the upload page</a>
+            <a href="/" class="alert-link">Go back to the upload page</a>
           </p>
         </div>
       `)
@@ -78,7 +78,7 @@ function checkResponseStatus(res) {
             <p>
             <span class="glyphicon glyphicon-alert"></span>
             The upload succeeded, but there were <a href="#warnings" class="alert-link">warnings</a>.</p>
-            <p><a href="/upload/" class="alert-link">Go back to the upload page</a></p>
+            <p><a href="/" class="alert-link">Go back to the upload page</a></p>
           </div>
         `)
       }
@@ -98,19 +98,19 @@ function checkResponseStatus(res) {
 
 // Create a table with sample data
 function generateTable(res) {
-  var rowData = res.data.slice(1)
-  var headerData = res.data[0]
+  var rowData = res.preview_data;
+  var headerData = res.headers;
 
-  var headers = headerData.map(function(header, i) {
+  var headers = headerData.map(function(header) {
     return (`
       <th>
-        ${header}
-        <span class="sql-type">${res.headers[i]['raw_type']}</span>
+        ${header.name}
+        <span class="sql-type">${header.raw_type}</span>
       </th>
     `)
   });
 
-  var rows = rowData.map(function(row, i) {
+  var rows = rowData.map(function(row) {
     var cells = row.map(function(cell) {
         return `<td>${cell}</td>`
     });
@@ -125,7 +125,7 @@ function generateTable(res) {
         <tr>${headers.join('')}</tr>
       </thead>
       <tbody>
-        ${rows.join('')}
+        ${rows.join('\n')}
       </tbody>
     </table>
   `;

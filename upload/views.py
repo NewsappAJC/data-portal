@@ -141,14 +141,21 @@ def write_to_db(request):
 
 
         table_params = request.session['table_params']
-        # Set the appropriate category for each column
-        headers = []
-        for key in data.keys():
-            if key != 'csrfmiddlewaretoken':
-                headers.append({'name': key, 'category': data[key]})
+        old_headers = table_params['headers']
+        # Kind of overcomplicated logic to make sure that headers with updated
+        # data are kept in the right order
+        updated_headers = [None for x in old_headers]
+        for key in [x for x in data.keys() if x != 'csrfmiddlewaretoken']:
+            for i, h in enumerate(old_headers):
+                if key == h['name']:
+                    updated_headers[i] = {'name': key, 'category': data[key]}
+                    break
 
-        table_params['headers'] = headers
+        table_params['headers'] = updated_headers
         table_params['s3_path'] = request.session['s3_path']
+
+        import pdb
+        pdb.set_trace()
 
         # Launch an asynchronous task for the potentially time-intensive job
         # of executing the LOAD DATA INFILE statement

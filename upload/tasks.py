@@ -145,21 +145,12 @@ class Loader(object):
             create_table_query = self._make_create_table_q()
             load_data_query = self._make_load_table_q()
 
-            # If an SQL error is thrown, end the process and return a summary
-            # of the error
-            try:
-                self.tracker.forward('Creating table in imports database')
-                self.connection.execute(create_table_query)
+            self.tracker.forward('Creating table in imports database')
+            self.connection.execute(create_table_query)
 
-                # Execute load data infile statement
-                self.tracker.forward('Executing load data infile')
-                self.connection.execute(load_data_query)
-
-            # Use the general class that catches all sqlalchemy errors.
-            # Store only the relevant part of the warnings
-            except exc.SQLAlchemyError as e:
-                r = re.compile(r'\(.+?\)')
-                return {'error': True, 'errorMessage': r.findall(str(e))[1]} 
+            # Execute load data infile statement
+            self.tracker.forward('Executing load data infile')
+            self.connection.execute(load_data_query)
 
             if len(w) > 0:
                 r = re.compile(r'\(.+?\)')
@@ -201,7 +192,16 @@ def load_infile(self, s3_path, table_name, headers, **kwargs):
     tracker.forward('Connecting to MySQL server')
 
     loader = Loader(tracker, table_name, headers, local_path)
-    create_table_query, sql_warnings = loader.run_load_infile()
+    error = False
+
+    try:
+        create_table_query, sql_warnings = loader.run_load_infile()
+    # Use the general class that catches all sqlalchemy errors.
+    # Store only the relevant part of the warnings
+    except exc.SQLAlchemyError as e:
+        r = re.compile(r'\(.+?\)')
+        error = {'error': True, 'errorMessage': r.findall(str(e))[1]} 
+        return {'error': error}
 
     # After the file is successfully uploaded to the DB, copy it from the 
     # tmp/ directory to its final home and delete the temporary file
@@ -218,14 +218,10 @@ def load_infile(self, s3_path, table_name, headers, **kwargs):
     tracker.forward('Closing the connection to the database')
     loader.end_connection()
 
-    dataf = []
-    dataf.append([x for x in preview.keys()])
-    dataf.extend([list(value) for i, value in enumerate(preview) if i < 5])
-
     return {'error': False,
         'table': table_name,
         'final_s3_path': final_s3_path,
-        'data': dataf,
+        'preview_data': [list(x) for x in preview.fetchall()],
         'headers': headers,
         'warnings': sql_warnings,
         'query': create_table_query
