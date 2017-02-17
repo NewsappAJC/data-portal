@@ -41,7 +41,11 @@ def upload_file(request):
     if request.method == 'POST':
         if form.is_valid():
             input_file = request.FILES['data_file']
-            local_path = '/tmp/ajcMa-data-upload.csv'
+            local_path = '/tmp/ajc-data-upload.csv'
+            try:
+                os.remove(local_path)
+            except OSError:
+                pass
             with open(local_path, 'wb+') as f:
                 # Use chunks so as not to overflow system memory
                 for i, chunk in enumerate(input_file.chunks()):
