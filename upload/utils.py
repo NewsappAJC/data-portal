@@ -177,7 +177,7 @@ class TableFormatter(object):
                 clean_name = re.sub(rx, sub_, clean_name.strip())
 
             # MySQL allows 64 character column names maximum
-            clean_names.append(clean_name.lower()[:60])
+            clean_names.append({'name': clean_name.lower()[:64]})
 
         return clean_names
 

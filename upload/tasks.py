@@ -41,9 +41,6 @@ class ProgressTracker(object):
 
         Arguments:
             message (string): Message you want to display on the progress bar
-
-        Returns:
-            void
         """
         self.step += 1
         meta = {'message': message,
@@ -59,11 +56,11 @@ class Loader(object):
     and load local data into it, all while sending progress updates to a celery
     class instance
     """
-    def __init__(self, tracker, table, columns, path):
+    def __init__(self, tracker, table, headers, path):
         self.tracker = tracker
         self.path = path
         self.table = table
-        self.columns = columns
+        self.columns = headers
 
         # Create a connection to the data warehouse. Pass local_infile as a
         # parameter so that the connection will accept LOAD INFILE statements
@@ -179,7 +176,7 @@ class Loader(object):
 # bind=True gives us access to this celery task instance through the self 
 # parameter
 @shared_task(bind=True)
-def load_infile(self, s3_path, table_name, columns, **kwargs):
+def load_infile(self, s3_path, table_name, headers, **kwargs):
     """
     A celery task that accesses a database and executes a LOAD DATA INFILE 
     query to load a CSV into it.
@@ -203,7 +200,7 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
     # Keep track of progress
     tracker.forward('Connecting to MySQL server')
 
-    loader = Loader(tracker, table_name, columns, local_path)
+    loader = Loader(tracker, table_name, headers, local_path)
     create_table_query, sql_warnings = loader.run_load_infile()
 
     # After the file is successfully uploaded to the DB, copy it from the 
@@ -229,7 +226,7 @@ def load_infile(self, s3_path, table_name, columns, **kwargs):
         'table': table_name,
         'final_s3_path': final_s3_path,
         'data': dataf,
-        'headers': columns,
+        'headers': headers,
         'warnings': sql_warnings,
         'query': create_table_query
     }

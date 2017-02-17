@@ -2,6 +2,9 @@
 
 window.onload = function() {
   addUploadHandler(ajaxPost);
+  $('#cancel-btn').on('click', function() {
+    $('#file-submit').button('reset');
+  })
 }
 
 function showCategorize(data) {
@@ -13,9 +16,9 @@ function showCategorize(data) {
   var headers = data.headers.map(function(header) {
     return (`
       <tr>
-        <td><strong>${header}</strong></td>
+        <td><strong>${header.name}</strong></td>
         <td>
-          <select name="${header}">
+          <select name="${header.name}">
             <option disabled selected value> -- select a category -- </option>
             ${options.join('\n')}
           </select>
@@ -28,6 +31,9 @@ function showCategorize(data) {
 }
 
 function showModal(data) {
+  // Clear past headers if the user hits upload multiple times
+  $('#header-input-holder').html('');
+
   data.headers.forEach(function(h) {
     $('#header-input-holder').append('<li>' + h + '</li>');
   });
@@ -43,7 +49,7 @@ function showModal(data) {
       e.preventDefault();
       e.stopPropagation();
       var data = new FormData($('#metadata-form')[0]);
-      ajaxPost('/upload/add-metadata/', data, showCategorize);
+      ajaxPost('/add-metadata/', data, showCategorize);
     })
   });
   $('#headerModal').modal();
@@ -57,7 +63,7 @@ function addUploadHandler(callback) {
     e.stopPropagation();
     // Get the data from the form and send it as an AJAX post request
     var data = new FormData($('#upload-form')[0]);
-    callback('/upload/upload-file/', data, showModal);
+    callback('/upload-file/', data, showModal);
 
     // Defined as a global so that we can enable/disable from within multiple
     // functions

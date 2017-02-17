@@ -1,7 +1,7 @@
 function getResult(cb) {
   $.ajax({
     type: 'GET', 
-    url: '/upload/check-task-status/',
+    url: '/check-task-status/',
     success: function(res) {
       if (cb(res) === 'incomplete') {
         // Poll the server every half second until a result is received

@@ -4,6 +4,7 @@ import os
 # Django imports
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
+from django.conf import settings
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -99,7 +100,7 @@ def add_metadata(request):
             # Sanitize the column headers
             formatter = TableFormatter(local_path)
             headers, sample_data = formatter.get_column_data()
-            request.session['headers'] = headers
+            request.session['table_params']['headers'] = headers
 
             data = {'headers': headers,
                     'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
@@ -119,20 +120,6 @@ def add_metadata(request):
                   'upload/upload.html',
                   {'form': form})
 
-@login_required
-def categorize(request):
-    """
-    Prompt the user to select categories for each column in the data.
-    """
-    context = {
-        'headers': request.session['headers'],
-        'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
-        'datatypes': Column.MYSQL_TYPE_CHOICES,
-        'range': range(3)
-    }
-
-    return render(request, 'upload/categorize.html', context)
-
 
 @login_required
 def write_to_db(request):
@@ -150,7 +137,13 @@ def write_to_db(request):
 
 
         table_params = request.session['table_params']
-        table_params['columns'] = [{'name': k} for k in data.keys() if k != 'csrfmiddlewaretoken']
+        # Set the appropriate category for each column
+        headers = []
+        for key in data.keys():
+            if key != 'csrfmiddlewaretoken':
+                headers.append({'name': key, 'category': data[key]})
+
+        table_params['headers'] = headers
         table_params['s3_path'] = request.session['s3_path']
 
         # Launch an asynchronous task for the potentially time-intensive job
@@ -159,22 +152,18 @@ def write_to_db(request):
             task = load_infile.delay(**table_params)
         # TODO : should also handle the ValueError for failing to connect to S3
         except ConnectionError:
-            message = 'Unable to connect to the Redis server'
+            message = '''
+                Unable to connect to the Redis server at address 
+                <strong>{}</strong>. Upload canceled.
+            '''.format(settings.BROKER_URL)
+
             messages.add_message(request, messages.ERROR, message)
             return redirect(reverse('upload:index'))
 
         # We will use the id to poll Redis for task status in the
         # check_task_status view
         request.session['task_id'] = task.id
-
-        # Set the appropriate category for each column
-        headers = []
-        for key in data.keys():
-            if key != 'csrfmiddlewaretoken':
-                headers.append({'name': key, 'category': data[key]})
-
-        request.session['headers'] = headers
-        context = {'table': request.session['table_params']['table_name']}
+        context = {'table': table_params['table_name']}
         return render(request, 'upload/write-to-db.html', context)
 
     return redirect(reverse('upload:index'))
@@ -232,16 +221,17 @@ def check_task_status(request):
 
         # engine = sqlalchemy.create_engine(URL)
         # connection = engine.connect()
+
         # index = Index(table_id=t.id, connection=connection)
 
         # Create column objects for each column in the table, and create an
         # index for the ones we're interested in
-        for i, session_header in enumerate(request.session['headers']):
+        for i, column in enumerate(request.session['table_params']['headers']):
             task_header = data['result']['headers'][i]
             c = Column(table=t,
-                       column=session_header['name'],
+                       column=column['name'],
                        mysql_type=task_header['datatype'],
-                       information_type=session_header['category'],
+                       information_type=column['category'],
                        column_size=task_header['length'])
             c.save()
             # Need to fix this so that it's stored as None
