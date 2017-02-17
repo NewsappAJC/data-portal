@@ -1,11 +1,9 @@
 /* global $ */
 
-window.onload = function() {
-  addUploadHandler(ajaxPost);
-  $('#cancel-btn').on('click', function() {
-    $('#file-submit').button('reset');
-  })
-}
+addUploadHandler(ajaxPost);
+$('#cancel-btn').on('click', function() {
+  $('#file-submit').button('reset');
+})
 
 function showCategorize(data) {
   $('#metadata-form').hide();
