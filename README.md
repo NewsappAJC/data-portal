@@ -3,6 +3,9 @@ Data Portal
 
 This tool is a Django app that creates a standard interface for data reporters to upload files to a shared MySQL database and Amazon S3. It saves metadata about each table uploaded to the database to make searching easier, and provides an interface for viewing and editing metadata about tables.
 
+How it works
+---
+
 The app prompts the user to upload a .CSV file and add information about it, such as the topic and the source. It then uploads the file to an S3 bucket, and prompts the user to categorize each of the columns in the table.
 
 The app uses Celery to spawn a separate worker process to ensure that the request doesn't time out while it loads the file into the database. It then uses the csvkit library to infer the type of each column and generate a MySQL table schema (see `upload/tasks.py` for implementation details). It uses these datatypes to generate a CREATE TABLE query and then executes a LOAD DATA INFILE statement to write the csv to a database of the user's choosing within the AJC datastore. 
