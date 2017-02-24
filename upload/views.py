@@ -154,9 +154,6 @@ def write_to_db(request):
         table_params['headers'] = updated_headers
         table_params['s3_path'] = request.session['s3_path']
 
-        import pdb
-        pdb.set_trace()
-
         # Launch an asynchronous task for the potentially time-intensive job
         # of executing the LOAD DATA INFILE statement
         try:
