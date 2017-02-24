@@ -36,7 +36,6 @@ flake8==3.2.1
 funcsigs==1.0.2
 functools32==3.2.3.post2
 futures==3.0.5
-GDAL==1.11.5
 gnureadline==6.3.3
 gunicorn==19.6.0
 haversine==0.4.5
