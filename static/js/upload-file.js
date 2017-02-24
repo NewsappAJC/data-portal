@@ -8,7 +8,7 @@ $('#cancel-btn').on('click', function() {
 function showCategorize(data) {
   $('#metadata-form').hide();
   $('#categorize').show();
-  var options = data.ajc_categories.map(function(cat) {
+  var options = data.categories.map(function(cat) {
     return `<option value="${cat[0]}">${cat[1]}</option>`;
   })
   var headers = data.headers.map(function(header) {

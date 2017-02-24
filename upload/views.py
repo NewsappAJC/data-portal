@@ -41,7 +41,7 @@ def upload_file(request):
     if request.method == 'POST':
         if form.is_valid():
             input_file = request.FILES['data_file']
-            local_path = '/tmp/ajc-data-upload.csv'
+            local_path = '/tmp/data-upload.csv'
             try:
                 os.remove(local_path)
             except OSError:
@@ -107,7 +107,7 @@ def add_metadata(request):
             request.session['table_params']['headers'] = headers
 
             data = {'headers': headers,
-                    'ajc_categories': Column.INFORMATION_TYPE_CHOICES,
+                    'categories': Column.INFORMATION_TYPE_CHOICES,
                     'sample_data': sample_data}
 
             return JsonResponse(data, status=200)

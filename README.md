@@ -22,32 +22,10 @@ $ pip install -r requirements.txt
 
 You need to download Redis, which acts as the task broker for the asynchronous processes. You can download redis at [redis.io/download](https://redis.io/download). See the Development section for information about how to run the Redis server.
 
-Environment config
+Environment configuration
 ---
 
-This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. I know that's a lot! To establish these connections it's necessary to set a few environmental variables (we're working on doing this via config script instead).
-
-All the many variables you need to set are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script, so you don't have to manually set them every time you want to run the server locally. See details about how to configure the `postactivate` script at [virtualenvwrapper.readthedocs.io](http://virtualenvwrapper.readthedocs.io/en/latest/scripts.html)
-
-__DATABASE_URL__: This is the address of the MySQL server where Django will store metadata about each upload.
-  
-  Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
-
-__DATA_WAREHOUSE_URL__: This is the server where you want uploaded files to live. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. For safety, this account should have permissions restricted to "CREATE."
-
-  Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
-
-__REDIS_URL__: This is the Redis datastore is a broker that handles messages to and from the Celery worker process.
-
-  Format: Varies. If you're using Heroku's Redis add-on, get the url by running `$ heroku config | grep REDIS` at the command line
-
-__S3_BUCKET__: This is the bucket where the original datafiles will live.
-
-  Format: `ajc-data-warehouse`
-
-__AWS_ACCESS_KEY__, __AWS_SECRET_KEY__: Your access key and secret key for the AWS bucket that will be updated by the app.
-
-__SECRET_KEY__: The secret key of your Django app. Django automatically generates a SECRET_KEY variable in your_project_name/settings.py - you shouldn't check it into version control, and instead you need to store it as an environmental variable.
+This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. I know that's a lot, but I've tried to make configuration as painless as possible. To configure your local setup, copy `config/secrets.cfg.example` to `config/secrets.cfg`, and enter your credentials for __every__ field.
 
 Development
 ---

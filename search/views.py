@@ -66,7 +66,7 @@ def get_all_results(request):
 
     # Generate an HttpResponse that prompts the user to download the CSV
     response = HttpResponse(file(TMP_PATH), content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=ajc-search-results.csv'
+    response['Content-Disposition'] = 'attachment; filename=search-results.csv'
     return response
 
 def search_detail(request):
