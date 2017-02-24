@@ -29,7 +29,7 @@ This tool needs access to a Django database where it can store metadata about ea
 
 Development
 ---
-Because there are a lot of moving parts, starting the dev server is a little more involved than in the average project (I'm working on writing a fabfile to automate this process). To summarize, you need to start the Redis server, start the Celery process, and then run the regular Django development server.
+Because there are a lot of moving parts, starting the dev server is a little more involved than in the average project. In short: you need to start the Redis server, start the Celery process, and then run the regular Django development server.
 
 * Start redis server: `$ redis-server`
 
@@ -37,7 +37,7 @@ Because there are a lot of moving parts, starting the dev server is a little mor
 
 * Start dev server: `$ ./manage.py runserver_plus`
 
-Static assets live in the `static` dir of the project root, and are compiled to the `staticfiles` dir. Within each app, asynchronous tasks live in `tasks`, and helper functions can be found in `utils.py`.
+Static assets live in the `static` dir of the project root, and are compiled to the `staticfiles` dir. Within each app, asynchronous tasks live in `tasks`, and helper functions can be found in `utils.py`. For more information about the layout of the app, see Django's excellent documentation at [www.djangoproject.com](https://www.djangoproject.com/).
 
 Run tests
 ---
