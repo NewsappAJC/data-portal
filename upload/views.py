@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 # Third-party imports
 # import sqlalchemy
 from celery.result import AsyncResult
-from redis.exceptions import ConnectionError
+from kombu.exceptions import OperationalError
 
 # Local imports
 from .forms import MetadataForm, FileForm
@@ -159,7 +159,7 @@ def write_to_db(request):
         try:
             task = load_infile.delay(**table_params)
         # TODO : should also handle the ValueError for failing to connect to S3
-        except ConnectionError:
+        except OperationalError:
             message = '''
                 Unable to connect to the Redis server at address 
                 <strong>{}</strong>. Upload canceled.
