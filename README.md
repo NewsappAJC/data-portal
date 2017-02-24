@@ -22,7 +22,9 @@ $ pip install -r requirements.txt
 
 You need to download Redis, which acts as the task broker for the asynchronous processes. You can download redis at [redis.io/download](https://redis.io/download). See the Development section for information about how to run the Redis server.
 
-*ENVIRONMENTAL VARIABLES*
+Environment config
+---
+
 This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. I know that's a lot! To establish these connections it's necessary to set a few environmental variables (we're working on doing this via config script instead).
 
 All the many variables you need to set are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script, so you don't have to manually set them every time you want to run the server locally. See details about how to configure the `postactivate` script at [virtualenvwrapper.readthedocs.io](http://virtualenvwrapper.readthedocs.io/en/latest/scripts.html)
