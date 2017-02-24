@@ -10,17 +10,24 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
+# Standard library imports
 import sys
 import os
+import ConfigParser
 
+# Django imports
 import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Parse settings from config file
+config_path = os.path.join(BASE_DIR, 'config', 'secrets.cfg')
+config = ConfigParser.RawConfigParser()
+config.read(config_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = config.get('django', 'secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -79,12 +86,13 @@ WSGI_APPLICATION = 'data_import_tool.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 DATABASES = {}
-DATABASES['default'] = dj_database_url.config()
+DATABASES['default'] = dj_database_url.parse(config.get('databases', 'dj_database_url'))
 # Use MySQL strict mode to escalate truncation warnings to errors. See
 # https://docs.djangoproject.com/en/1.10/ref/databases/#setting-sql-mode
 DATABASES['default']['OPTIONS'] = {
     'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"' 
 }
+DATA_WAREHOUSE_URL = config.get('databases', 'data_warehouse_url')
 
 # Creating a local sqlite DB in memory for testing is a lot faster than 
 # using MySQL
@@ -134,14 +142,15 @@ STATICFILES_DIRS = (
 )
 
 # Celery
-BROKER_URL = os.environ.get('REDIS_URL')
+BROKER_URL = config.get('redis', 'redis_url')
 BROKER_POOL_LIMIT = 0  # Prevent Celery from creating too many clients
 CELERY_REDIS_MAX_CONNECTIONS = 5
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
+CELERY_RESULT_BACKEND = config.get('redis', 'redis_url')
 if 'test' in sys.argv:
     CELERY_ALWAYS_EAGER = True  # Run Celery tasks in the same thread if testing
 
 # AWS
-AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
-AWS_SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
+AWS_ACCESS_KEY = config.get('s3', 'aws_access_key')
+AWS_SECRET_KEY = config.get('s3', 'aws_secret_key')
+S3_BUCKET = config.get('s3', 's3_bucket')
 

@@ -24,8 +24,8 @@ from search.utils import SearchManager
 from upload.tasks import load_infile
 
 # Constants
-BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = os.environ.get('DATA_WAREHOUSE_URL')
+BUCKET_NAME = settings.S3_BUCKET
+URL = settings.DATA_WAREHOUSE_URL
 
 @login_required
 def upload(request):

@@ -50,7 +50,7 @@ function showModal(data) {
       ajaxPost('/add-metadata/', data, showCategorize);
     })
   });
-  $('#headerModal').modal();
+  $('#headerModal').modal({backdrop: 'static', keyboard: false});
 }
 
 

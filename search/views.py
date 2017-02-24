@@ -7,12 +7,13 @@ import re
 from django.utils.html import escape
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.conf import settings
 
 # Local module imports
 from .utils import SearchManager
 
-BUCKET_NAME = os.environ.get('S3_BUCKET')
-TMP_PATH = os.path.join('/tmp', 'ajc-import-searchfile.csv')
+BUCKET_NAME = settings.S3_BUCKET
+TMP_PATH = os.path.join('/tmp', 'data-upload-tmp.csv')
 
 def search(request):
     results = []

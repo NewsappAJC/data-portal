@@ -1,13 +1,12 @@
-# Stdlib imports
-import os
+# Django imports
+from django.conf import settings
 
 # Third-party imports
 from sqlalchemy import create_engine
 
 # Constants
-DATA_WAREHOUSE_URL = os.environ.get('DATA_WAREHOUSE_URL')
-TMP_PATH = os.path.join('/tmp', 'ajc-import-searchfile.csv')
-BUCKET_NAME = os.environ.get('S3_BUCKET')
+DATA_WAREHOUSE_URL = settings.DATA_WAREHOUSE_URL
+BUCKET_NAME = settings.S3_BUCKET
 
 class SearchManager(object):
     """

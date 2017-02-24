@@ -4,6 +4,9 @@ import os
 import re
 import warnings
 
+# Django imports
+from django.conf import settings
+
 # Third party imports
 import sqlalchemy
 from sqlalchemy import exc # error handling
@@ -18,11 +21,11 @@ from .utils import S3Manager
 # Constants TODO: these should be set in settings and accessed that way, so
 # they don't have to be imported in every single file the way we're currently
 # doing it
-BUCKET_NAME = os.environ.get('S3_BUCKET')
-URL = os.environ.get('DATA_WAREHOUSE_URL')  # Where the table will be uploaded
-ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
-SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
-TOTAL = 8# Unfortunately we have to hardcode the total number of progress steps
+BUCKET_NAME = settings.S3_BUCKET
+URL = settings.DATA_WAREHOUSE_URL # Where the table will be uploaded
+ACCESS_KEY = settings.AWS_ACCESS_KEY
+SECRET_KEY = settings.AWS_SECRET_KEY
+TOTAL = 8 # Unfortunately we have to hardcode the total number of steps for the progress bar
 
 class ProgressTracker(object):
     """

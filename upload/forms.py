@@ -1,9 +1,9 @@
 # Standard library imports
 import re
-import os
 
 # Third party imports
 from django import forms
+from django.conf import settings
 import sqlalchemy
 
 # Local imports
@@ -76,7 +76,7 @@ class MetadataForm(forms.Form):
     def clean_table_name(self):
         input_name = self.cleaned_data['table_name']
 
-        engine = sqlalchemy.create_engine(os.environ.get('DATA_WAREHOUSE_URL'))
+        engine = sqlalchemy.create_engine(settings.DATA_WAREHOUSE_URL)
         connection = engine.connect()
         names = [n[0] for n in connection.execute('SHOW TABLES IN imports;')]
         if input_name in names:

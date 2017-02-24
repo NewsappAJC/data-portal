@@ -12,7 +12,7 @@ import boto3
 import botocore
 
 # Constants
-BUCKET_NAME = os.environ.get('S3_BUCKET')
+BUCKET_NAME = settings.S3_BUCKET
 
 class S3Manager(object):
     """
