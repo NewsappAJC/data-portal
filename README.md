@@ -27,6 +27,10 @@ Environment configuration
 
 This tool needs access to a Django database where it can store metadata about each upload, the MySQL server where you want the uploaded data to live, Amazon S3, and a Redis datastore. I know that's a lot, but I've tried to make configuration as painless as possible. To configure your local setup, copy `config/secrets.cfg.example` to `config/secrets.cfg`, and enter your credentials for __every__ field.
 
+Create a user
+---
+You can create a user by running `$ ./manage.py createsuperuser` from the root of the project and following the prompts.
+
 Development
 ---
 Because there are a lot of moving parts, starting the dev server is a little more involved than in the average project. In short: you need to start the Redis server, start the Celery process, and then run the regular Django development server.
