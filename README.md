@@ -29,37 +29,25 @@ This tool needs access to a Django database where it can store metadata about ea
 
 All the many variables you need to set are listed below - I recommend using virtualenvwrapper and exporting these environmental variables in the `postactivate` shell script, so you don't have to manually set them every time you want to run the server locally. See details about how to configure the `postactivate` script at [virtualenvwrapper.readthedocs.io](http://virtualenvwrapper.readthedocs.io/en/latest/scripts.html)
 
-* DATABASE_URL
-
-  This is the address of the MySQL server where Django will store metadata about each upload.
+* __DATABASE_URL__: This is the address of the MySQL server where Django will store metadata about each upload.
   
   Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
 
-* DATA_WAREHOUSE_URL
-
-  This is the server where you want uploaded files to live. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. For safety, this account should have permissions restricted to "CREATE."
+* __DATA_WAREHOUSE_URL__: This is the server where you want uploaded files to live. Be sure you have the correct permissions and that the MySQL server is set to accept LOAD DATA INFILE statements. For safety, this account should have permissions restricted to "CREATE."
 
   Format: `mysql://USER:PASSWORD@HOST:PORT/NAME`
 
-* REDIS_URL
-
-  This is the Redis datastore is a broker that handles messages to and from the Celery worker process.
+* __REDIS_URL__: This is the Redis datastore is a broker that handles messages to and from the Celery worker process.
 
   Format: Varies. If you're using Heroku's Redis add-on, get the url by running `$ heroku config | grep REDIS` at the command line
 
-* S3_BUCKET
-
-  This is the bucket where the original datafiles will live.
+* __S3_BUCKET__: This is the bucket where the original datafiles will live.
 
   Format: `ajc-data-warehouse`
 
-* AWS_ACCESS_KEY, AWS_SECRET_KEY
+* __AWS_ACCESS_KEY__, __AWS_SECRET_KEY__: Your access key and secret key for the AWS bucket that will be updated by the app.
 
-  Your access key and secret key for the AWS bucket that will be updated by the app.
-
-$ SECRET_KEY
-
-  The secret key of your app
+* __SECRET_KEY__: The secret key of your Django app. Django automatically generates a SECRET_KEY variable in your_project_name/settings.py - you shouldn't check it into version control, and instead you need to store it as an environmental variable.
 
 Development
 ---
